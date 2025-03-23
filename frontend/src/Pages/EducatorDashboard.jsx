@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 
-const TeacherDashboard = () => {
+const EducatorDashboard = () => {
   const [activeTab, setActiveTab] = useState('schedule');
   const [showNotifications, setShowNotifications] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
@@ -706,7 +706,7 @@ const renderProfileMenu = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16">
             <div className="flex items-center">
-              <h1 className="text-xl font-bold text-blue-800">Teacher Dashboard</h1>
+              <h1 className="text-xl font-bold text-blue-800">Educator Dashboard</h1>
             </div>
             <div className="flex items-center space-x-4">
               {/* Notifications */}
@@ -820,4 +820,4 @@ const renderProfileMenu = () => {
   );
   };
   
-  export default TeacherDashboard;
+  export default EducatorDashboard;

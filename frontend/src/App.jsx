@@ -6,7 +6,7 @@ import EnrollForm from './Pages/EnrollForm'
 import StudentDashboard from "./Pages/StudentDashboard";
 import Home from "./Pages/HomePage";
 import AdminDashboard from "./Pages/admindashboard";
-import TeacherDashboard from "./Pages/TeacherDashboard";
+import EducatorDashboard from "./Pages/EducatorDashboard";
 import LoginPage from "./Pages/LoginPage";
 //import { Link } from "react-router-dom";
 
@@ -25,7 +25,7 @@ function App() {
       {/*  <Route path = "/admin/student-view" element = {<StudentListPage />} />*?}
         <Route path = "./admin/student/view/add" element = {<AddStudentForm />}/>
               { /*<Route path="/search" element={<Search />} />}*/}
-       <Route path="/teacher-dashboard" element={<TeacherDashboard />} />
+       <Route path="/educator-dashboard" element={<EducatorDashboard />} />
         <Route path="/student-dashboard" element={<StudentDashboard />} />
        
       </Routes>
