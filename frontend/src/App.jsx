@@ -8,6 +8,9 @@ import Home from "./Pages/HomePage";
 import AdminDashboard from "./Pages/admindashboard";
 import EducatorDashboard from "./Pages/EducatorDashboard";
 import LoginPage from "./Pages/LoginPage";
+import StudentList from  "./Pages/StudentList"
+import TeacherList from  "./Pages/TeacherList"
+import ProgramList from  "./Pages/ProgramList"
 //import { Link } from "react-router-dom";
 
 import AddStudentForm from "./Pages/AddStudentForm";
@@ -22,9 +25,9 @@ function App() {
      <Route path="/admin" element={<AdminDashboard />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/enroll" element={<EnrollForm />} />
-      {/*  <Route path = "/admin/student-view" element = {<StudentListPage />} />*?}
-        <Route path = "./admin/student/view/add" element = {<AddStudentForm />}/>
-              { /*<Route path="/search" element={<Search />} />}*/}
+         <Route path="/admin/student-list" element={<StudentList />} />
+         <Route path="/admin/educator-list" element={<TeacherList />} />
+         <Route path="/admin/program-list" element={<ProgramList />} />    
        <Route path="/educator-dashboard" element={<EducatorDashboard />} />
         <Route path="/student-dashboard" element={<StudentDashboard />} />
        
