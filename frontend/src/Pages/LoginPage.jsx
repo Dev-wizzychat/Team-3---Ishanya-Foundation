@@ -53,7 +53,7 @@ const LoginPage = () => {
   
       const API = import.meta.env.VITE_API_BASE_URL;
 
-      await axios.post(`${API}/login`, formData, {
+      const response = await axios.post(`${API}/login`, formData, {
         headers: {
           "Content-Type": "application/x-www-form-urlencoded",
         },
