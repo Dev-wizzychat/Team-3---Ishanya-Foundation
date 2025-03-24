@@ -11,7 +11,9 @@ import StudentList from "./Pages/StudentList"
 import TeacherList from "./Pages/TeacherList"
 import ProgramList from "./Pages/ProgramList"
 import Approvalrequest from "./Pages/Approvalrequest"
+import NewEnrollmentform from './Pages/NewEnrollmentform'
 import EnrollForm from './Pages/EnrollForm'
+
 //import { Link } from "react-router-dom";
 
 import AddStudentForm from "./Pages/AddStudentForm";
@@ -26,6 +28,7 @@ function App() {
         <Route path="/admin" element={<AdminDashboard />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/enroll" element={<EnrollForm />} />
+        <Route path="/admin/enroll" element={<NewEnrollmentform />} />
         <Route path="/admin/student-list" element={<StudentList />} />
         <Route path="/admin/educator-list" element={<TeacherList />} />
         <Route path="/admin/program-list" element={<ProgramList />} />
