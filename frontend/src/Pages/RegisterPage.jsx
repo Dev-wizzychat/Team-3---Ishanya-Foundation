@@ -1,9 +1,10 @@
 import { useState } from "react";
 import axios from "axios"; // For making HTTP requests
 
-const LoginPage = () => {
+const RegisterPage = () => {
   const [isAnimated, setIsAnimated] = useState(false);
   const [email, setEmail] = useState("");
+  const [employeeId, setEmployeeId] = useState("");
   const [password, setPassword] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
@@ -18,12 +19,41 @@ const LoginPage = () => {
     }
   };
 
-  // Basic form validation
-  const validateForm = () => {
+  // Validation for educator register (only email and password)
+  const validateEducatorForm = () => {
     // Email validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
       setErrorMessage("Please enter a valid email address");
+      return false;
+    }
+
+    // Employee ID validation
+    if (!employeeId.trim()) {
+      setErrorMessage("Please enter an Employee ID");
+      return false;
+    }
+
+    // Password validation
+    if (password.length < 6) {
+      setErrorMessage("Password must be at least 6 characters long");
+      return false;
+    }
+
+    return true;
+  };
+
+  const validateAdminForm = () => {
+    // Email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      setErrorMessage("Please enter a valid email address");
+      return false;
+    }
+
+    // Employee ID validation
+    if (!employeeId.trim()) {
+      setErrorMessage("Please enter an Employee ID");
       return false;
     }
 
@@ -42,63 +72,49 @@ const LoginPage = () => {
     setErrorMessage("");
     setSuccessMessage("");
   
-    if (!validateForm()) return;
+    // Validate inputs
+    const isValid = userType === "teacher"
+      ? validateTeacherForm()
+      : validateAdminForm();
+  
+    if (!isValid) return;
   
     setIsLoading(true);
   
     try {
-      const formData = new URLSearchParams();
-      formData.append("username", email); // FastAPI expects "username"
-      formData.append("password", password);
-  
       const API = import.meta.env.VITE_API_BASE_URL;
-
-      const response = await axios.post(`${API}/login`, formData, {
-        headers: {
-          "Content-Type": "application/x-www-form-urlencoded",
-          Authorization: `Bearer ${localStorage.getItem("authToken")}`
-        },
-      });
   
-      if (response.data.access_token) {
-        localStorage.setItem("authToken", response.data.access_token);
-        localStorage.setItem("role", role);
-        localStorage.setItem("userProfile", JSON.stringify(profile));
-
-        setSuccessMessage(`Successfully logged in as ${userType}`);
+      const payload = {
+        email,
+        password,
+        role: userType === "teacher" ? "educator" : "admin",
+        profile_id: employeeId || `TEMP-${Math.random().toString(36).slice(2)}`
+      };
   
-        setTimeout(() => {
-          if (role === "admin") {
-            window.location.href = "/admin";
-          } else if (role === "educator") {
-            window.location.href = "/educator-dashboard";
-          } else {
-            window.location.href = "/";
-          }
-        }, 1000);
-      } else {
-        setErrorMessage("Login failed. Please try again.");
-      }
+      const response = await axios.post(`${API}/register`, payload);
+  
+      setSuccessMessage("Registration successful!");
+  
+      setTimeout(() => {
+        window.location.href = userType === "teacher" ? "/educator-dashboard" : "/admin";
+      }, 1000);
     } catch (error) {
       if (error.response) {
         setErrorMessage(
-          error.response.status === 401
-            ? "Invalid email or password. Please try again."
-            : error.response.status === 404
-            ? "User account not found. Please check your credentials."
-            : error.response.data?.detail || "Login failed. Please try again later."
+          error.response.status === 400
+            ? "User already exists. Try logging in."
+            : error.response.data?.detail || "Registration failed."
         );
       } else if (error.request) {
-        setErrorMessage("Cannot connect to server. Please check your internet connection and try again.");
+        setErrorMessage("Cannot connect to server. Please try again later.");
       } else {
-        setErrorMessage("An unexpected error occurred. Please try again.");
+        setErrorMessage("An unexpected error occurred.");
       }
-      console.error("Login error:", error);
+      console.error("Registration error:", error);
     } finally {
       setIsLoading(false);
     }
   };
-  
   
   
   // Message display component
@@ -118,27 +134,40 @@ const LoginPage = () => {
     <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-purple-200 to-indigo-100 p-6">
       <div className="mb-8 text-center">
         <h1 className="text-4xl font-bold text-indigo-800 mb-2">Ishanya</h1>
-        <p className="text-lg text-indigo-600">Login Portal</p>
+        <p className="text-lg text-indigo-600">Registration Portal</p>
       </div>
       
-      <div className="w-full max-w-2xl bg-white relative overflow-hidden rounded-lg shadow-2xl min-h-[400px]">
-        {/* Educator Login Form */}
+      <div className="w-full max-w-2xl bg-white relative overflow-hidden rounded-lg shadow-2xl min-h-[450px]">
+        {/* Teacher Login Form */}
         <div className={`absolute top-0 left-0 h-full w-1/2 transition-all duration-700 ease-in-out z-20 ${
           isAnimated ? 'translate-x-full opacity-0' : 'opacity-100'
         }`}>
           <div className="p-8">
-            <h1 className="text-2xl font-bold text-indigo-600">Educator Login</h1>
+            <h1 className="text-2xl font-bold text-indigo-600">Educator Registration</h1>
             <p className="mt-2 text-sm text-gray-600">
-              Access your classroom details
+             
             </p>
             
-            <form className="mt-6" onSubmit={(e) => handleSubmit(e, "educator")}>
+            <form className="mt-6" onSubmit={(e) => handleSubmit(e, "teacher")}>
+            <div className="mb-4">
+                <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="teacher-employee-id">
+                  Employee ID
+                </label>
+                <input
+                  id="teacher-employee-id"
+                  type="text"
+                  value={employeeId}
+                  onChange={handleInputChange(setEmployeeId)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                  required
+                />
+              </div>
               <div className="mb-4">
-                <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="educator-email">
+                <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="teacher-email">
                   Email
                 </label>
                 <input
-                  id="educator-email"
+                  id="teacher-email"
                   type="email"
                   value={email}
                   onChange={handleInputChange(setEmail)}
@@ -147,11 +176,11 @@ const LoginPage = () => {
                 />
               </div>
               <div className="mb-6">
-                <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="educator-password">
+                <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="teacher-password">
                   Password
                 </label>
                 <input
-                  id="educator-password"
+                  id="teacher-password"
                   type="password"
                   value={password}
                   onChange={handleInputChange(setPassword)}
@@ -169,15 +198,9 @@ const LoginPage = () => {
                   isLoading ? 'opacity-70 cursor-not-allowed' : 'hover:bg-indigo-700'
                 }`}
               >
-                {isLoading ? "Signing in..." : "Sign In as Educator"}
+                {isLoading ? "Signing in..." : "Sign In as Teacher"}
               </button>
             </form>
-            <a
-              href="#"
-              className="block text-center text-sm text-indigo-600 mt-4 hover:text-indigo-800"
-            >
-              Forgot your password?
-            </a>
           </div>
         </div>
         
@@ -186,12 +209,25 @@ const LoginPage = () => {
           isAnimated ? 'translate-x-full opacity-100 z-20' : 'opacity-0 z-10'
         }`}>
           <div className="p-8">
-            <h1 className="text-2xl font-bold text-indigo-600">Admin Login</h1>
+            <h1 className="text-2xl font-bold text-indigo-600">Admin Registration</h1>
             <p className="mt-2 text-sm text-gray-600">
-              Manage school operations and records
+           
             </p>
             
             <form className="mt-6" onSubmit={(e) => handleSubmit(e, "admin")}>
+            <div className="mb-4">
+                <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="admin-employee-id">
+                  Employee ID
+                </label>
+                <input
+                  id="admin-employee-id"
+                  type="text"
+                  value={employeeId}
+                  onChange={handleInputChange(setEmployeeId)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                  required
+                />
+              </div>
               <div className="mb-4">
                 <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="admin-email">
                   Email
@@ -205,6 +241,7 @@ const LoginPage = () => {
                   required
                 />
               </div>
+            
               <div className="mb-6">
                 <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="admin-password">
                   Password
@@ -231,12 +268,6 @@ const LoginPage = () => {
                 {isLoading ? "Signing in..." : "Sign In as Admin"}
               </button>
             </form>
-            <a
-              href="#"
-              className="block text-center text-sm text-indigo-600 mt-4 hover:text-indigo-800"
-            >
-              Forgot your password?
-            </a>
           </div>
         </div>
         
@@ -253,7 +284,7 @@ const LoginPage = () => {
             } transition-transform duration-700 ease-in-out`}>
               <div className="p-6 text-center">
                 <h1 className="text-2xl font-bold text-white mb-4">
-                  Educator Login
+                  Teacher Registration
                 </h1>
                 <p className="text-white">Access classroom details</p>
                 <button
@@ -261,7 +292,6 @@ const LoginPage = () => {
              hover:bg-white hover:bg-opacity-10 hover:text-black transition-colors duration-200"
   onClick={() => setIsAnimated(!isAnimated)}
 >
-
                   Switch to Teacher
                 </button>
               </div>
@@ -273,7 +303,7 @@ const LoginPage = () => {
             } transition-transform duration-700 ease-in-out`}>
               <div className="p-6 text-center">
                 <h1 className="text-2xl font-bold text-white mb-4">
-                  Admin Login
+                  Admin Registration
                 </h1>
                 <p className="text-white">Manage school operations and users</p>
                 <button
@@ -296,4 +326,4 @@ const LoginPage = () => {
   );
 };
 
-export default LoginPage;
+export default RegisterPage;
