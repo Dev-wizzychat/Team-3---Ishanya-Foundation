@@ -1,7 +1,12 @@
 import React, { useState } from 'react';
-import { Bell, Home, Search, User, Settings, LogOut, HelpCircle } from 'lucide-react';
+import { useNavigate } from "react-router-dom";
+import CalendarScheduleViewer from '../components/Calendarschedule';
+import { Link } from "react-router-dom";
+import { Bell, Home, Search, User, Settings, LogOut, HelpCircle, CheckCircle, XCircle } from 'lucide-react';
 
 const AdminDashboard = () => {
+ const navigate = useNavigate();
+
   const [searchQuery, setSearchQuery] = useState('');
   const [searchBy, setSearchBy] = useState('name');
   const [showSearchOptions, setShowSearchOptions] = useState(false);
@@ -9,6 +14,7 @@ const AdminDashboard = () => {
   const [showProfile, setShowProfile] = useState(false);
   const [filteredUsers, setFilteredUsers] = useState([]);
   const [hasSearched, setHasSearched] = useState(false);
+  const [selectedTab, setSelectedTab] = useState('dashboard');
   
   // Sample admin data
   const adminData = {
@@ -18,7 +24,12 @@ const AdminDashboard = () => {
     lastLogin: "Today at 09:15 AM",
     joinDate: "Jan 15, 2023"
   };
-  
+  const programs = [
+    { id: "PROG001", name: "Computer Science", description: "Comprehensive CS Program" },
+    { id: "PROG002", name: "Data Science", description: "Advanced Data Analytics" },
+    { id: "PROG003", name: "Web Development", description: "Full-Stack Web Technologies" },
+    { id: "PROG004", name: "Machine Learning", description: "AI and Deep Learning" }
+  ];
   // Sample data for notifications
   const notifications = [
     { id: 1, text: 'New user registered', time: '5 min ago' },
@@ -38,6 +49,45 @@ const AdminDashboard = () => {
     { id: "USR008", name: "Jennifer Garcia", city: "San Diego", profession: "student", email: "jennifer.g@example.com" },
     { id: "USR009", name: "Robert Miller", city: "Dallas", profession: "teacher", email: "robert.m@example.com" },
     { id: "USR010", name: "Lisa Rodriguez", city: "San Jose", profession: "student", email: "lisa.r@example.com" }
+  ];
+
+  // New student enrollment data
+  const studentEnrollments = [
+    { 
+      id: "USR002", 
+      name: "Emily Johnson", 
+      course: "Computer Science", 
+      enrollmentDate: "2024-01-15", 
+      status: "approved" 
+    },
+    { 
+      id: "USR004", 
+      name: "Sarah Davis", 
+      course: "Data Science", 
+      enrollmentDate: "2024-02-20", 
+      status: "unapproved" 
+    },
+    { 
+      id: "USR006", 
+      name: "Jessica Taylor", 
+      course: "Machine Learning", 
+      enrollmentDate: "2024-03-10", 
+      status: "approved" 
+    },
+    { 
+      id: "USR008", 
+      name: "Jennifer Garcia", 
+      course: "Web Development", 
+      enrollmentDate: "2024-03-25", 
+      status: "unapproved" 
+    },
+    { 
+      id: "USR010", 
+      name: "Lisa Rodriguez", 
+      course: "Cybersecurity", 
+      enrollmentDate: "2024-04-05", 
+      status: "approved" 
+    }
   ];
 
   const handleSearchChange = (e) => {
@@ -84,13 +134,171 @@ const AdminDashboard = () => {
     setFilteredUsers([]);
   };
 
+  // New method to render tab content
+  const renderTabContent = () => {
+    switch(selectedTab) {
+      case 'dashboard':
+        return renderDashboardContent();
+      case 'students':
+        return renderStudentEnrollments();
+      default:
+        return renderDashboardContent();
+    }
+  };
+
+  // Existing dashboard content method
+  const renderDashboardContent = () => (
+    <>
+      {/* Existing dashboard stats code */}
+      {!hasSearched && (
+       <div>
+
+       <div className="mt-6 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+         <Link to="/admin/program-list" className="bg-indigo-50 overflow-hidden shadow rounded-lg hover:bg-indigo-100 transition-colors">
+           <div className="p-5">
+             <div className="flex items-center">
+               <div className="flex-shrink-0 bg-indigo-500 rounded-md p-3">
+                 <svg className="h-6 w-6 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                 </svg>
+               </div>
+               <div className="ml-5 w-0 flex-1">
+                 <dl>
+                   <dt className="text-sm font-medium text-gray-500 truncate">Programs</dt>
+                   <dd className="flex items-baseline">
+                     <div className="text-2xl font-semibold text-gray-900">{programs.length}</div>
+                   </dd>
+                 </dl>
+               </div>
+             </div>
+           </div>
+         </Link>
+       
+         <Link to="/admin/educator-list" className="bg-green-50 overflow-hidden shadow rounded-lg hover:bg-green-100 transition-colors">
+           <div className="p-5">
+             <div className="flex items-center">
+               <div className="flex-shrink-0 bg-green-500 rounded-md p-3">
+                 <svg className="h-6 w-6 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
+                 </svg>
+               </div>
+               <div className="ml-5 w-0 flex-1">
+                 <dl>
+                   <dt className="text-sm font-medium text-gray-500 truncate">Educators</dt>
+                   <dd className="flex items-baseline">
+                     <div className="text-2xl font-semibold text-gray-900">
+                       {users.filter(user => user.profession === 'teacher').length}
+                     </div>
+                   </dd>
+                 </dl>
+               </div>
+             </div>
+           </div>
+         </Link>
+       
+         <Link to="/admin/student-list" className="bg-blue-50 overflow-hidden shadow rounded-lg hover:bg-blue-100 transition-colors">
+           <div className="p-5">
+             <div className="flex items-center">
+               <div className="flex-shrink-0 bg-blue-500 rounded-md p-3">
+                 <svg className="h-6 w-6 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                   <path d="M12 14l9-5-9-5-9 5 9 5z" />
+                   <path d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z" />
+                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 14l9-5-9-5-9 5 9 5zm0 0l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14zm-4 6v-7.5l4-2.222" />
+                 </svg>
+               </div>
+               <div className="ml-5 w-0 flex-1">
+                 <dl>
+                   <dt className="text-sm font-medium text-gray-500 truncate">Students</dt>
+                   <dd className="flex items-baseline">
+                     <div className="text-2xl font-semibold text-gray-900">
+                       {users.filter(user => user.profession === 'student').length}
+                     </div>
+                   </dd>
+                 </dl>
+               </div>
+             </div>
+           </div>
+         </Link>
+       </div>
+       
+ 
+      { <div className="mt-8">
+      <CalendarScheduleViewer />
+       </div>}
+     </div>
+      )}
+    </>
+  );
+
+  // New method to render student enrollments
+  const renderStudentEnrollments = () => {
+    const studentList = studentEnrollments.filter(enrollment => 
+      enrollment.name.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+
+    return (
+      <div className="bg-white shadow rounded-lg p-6">
+        <h1 className="text-2xl font-semibold text-gray-800 mb-4">Student Enrollments</h1>
+        
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Course</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Enrollment Date</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {studentList.map(enrollment => (
+                <tr key={enrollment.id} className="hover:bg-gray-50">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                    {enrollment.name}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    {enrollment.course}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    {enrollment.enrollmentDate}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                      enrollment.status === 'approved' 
+                        ? 'bg-green-100 text-green-800' 
+                        : 'bg-red-100 text-red-800'
+                    }`}>
+                      {enrollment.status}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                    <button className="text-indigo-600 hover:text-indigo-900 mr-3">
+                      View Details
+                    </button>
+                    <button className={`px-2 py-1 rounded text-xs ${
+                      enrollment.status === 'approved' 
+                        ? 'bg-red-50 text-red-600 hover:bg-red-100' 
+                        : 'bg-green-50 text-green-600 hover:bg-green-100'
+                    }`}>
+                      {enrollment.status === 'approved' ? 'Revoke' : 'Approve'}
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="min-h-screen bg-gray-100">
       {/* Navigation header */}
       <header className="bg-white shadow-md">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16">
-            
             {/* Left side - Logo & Home button */}
             <div className="flex">
               <div className="flex-shrink-0 flex items-center">
@@ -208,7 +416,7 @@ const AdminDashboard = () => {
                       <div className="flex justify-between items-center mb-2">
                         <h3 className="text-sm font-semibold">Notifications</h3>
                         <button className="text-xs text-indigo-600 hover:text-indigo-800">
-                          Mark all as read
+                          Mark all as read  
                         </button>
                       </div>
                       <div className="divide-y">
@@ -295,149 +503,34 @@ const AdminDashboard = () => {
       
       {/* Main content area */}
       <main className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
-        <div className="bg-white shadow rounded-lg p-6">
-          <h1 className="text-2xl font-semibold text-gray-800 mb-4">Dashboard</h1>
-          <p className="text-gray-600 mb-6">Welcome to your admin dashboard. You can search for users by name, ID, city, or profession.</p>
-          
-          {/* Search Results */}
-          {hasSearched && (
-            <div className="mt-4">
-              <div className="flex justify-between items-center mb-4">
-                <h2 className="text-lg font-medium text-gray-700">
-                  Search Results ({filteredUsers.length})
-                </h2>
-                <button 
-                  onClick={handleClearSearch}
-                  className="px-3 py-1 text-sm bg-gray-100 hover:bg-gray-200 rounded-md"
-                >
-                  Clear
-                </button>
-              </div>
-              
-              {filteredUsers.length > 0 ? (
-                <div className="overflow-x-auto">
-                  <table className="min-w-full divide-y divide-gray-200">
-                    <thead className="bg-gray-50">
-                      <tr>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">City</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Profession</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
-                        <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody className="bg-white divide-y divide-gray-200">
-                      {filteredUsers.map(user => (
-                        <tr key={user.id} className="hover:bg-gray-50">
-                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{user.id}</td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{user.name}</td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{user.city}</td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${user.profession === 'teacher' ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800'}`}>
-                              {user.profession}
-                            </span>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{user.email}</td>
-                          <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                            <button className="text-indigo-600 hover:text-indigo-900 mr-3">View</button>
-                            <button className="text-indigo-600 hover:text-indigo-900">Edit</button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              ) : (
-                <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4">
-                  <div className="flex">
-                    <div className="flex-shrink-0">
-                      <svg className="h-5 w-5 text-yellow-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                        <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                      </svg>
-                    </div>
-                    <div className="ml-3">
-                      <p className="text-sm text-yellow-700">
-                        No users found matching "{searchQuery}" in {searchBy}.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-          
-          {/* Dashboard Stats (only shown when not displaying search results) */}
-          {!hasSearched && (
-            <div className="mt-6 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
-              <div className="bg-indigo-50 overflow-hidden shadow rounded-lg">
-                <div className="p-5">
-                  <div className="flex items-center">
-                    <div className="flex-shrink-0 bg-indigo-500 rounded-md p-3">
-                      <svg className="h-6 w-6 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-                      </svg>
-                    </div>
-                    <div className="ml-5 w-0 flex-1">
-                      <dl>
-                        <dt className="text-sm font-medium text-gray-500 truncate">Total Users</dt>
-                        <dd className="flex items-baseline">
-                          <div className="text-2xl font-semibold text-gray-900">{users.length}</div>
-                        </dd>
-                      </dl>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              
-              <div className="bg-green-50 overflow-hidden shadow rounded-lg">
-                <div className="p-5">
-                  <div className="flex items-center">
-                    <div className="flex-shrink-0 bg-green-500 rounded-md p-3">
-                      <svg className="h-6 w-6 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
-                      </svg>
-                    </div>
-                    <div className="ml-5 w-0 flex-1">
-                      <dl>
-                        <dt className="text-sm font-medium text-gray-500 truncate">Teachers</dt>
-                        <dd className="flex items-baseline">
-                          <div className="text-2xl font-semibold text-gray-900">
-                            {users.filter(user => user.profession === 'teacher').length}
-                          </div>
-                        </dd>
-                      </dl>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              
-              <div className="bg-blue-50 overflow-hidden shadow rounded-lg">
-                <div className="p-5">
-                  <div className="flex items-center">
-                    <div className="flex-shrink-0 bg-blue-500 rounded-md p-3">
-                      <svg className="h-6 w-6 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path d="M12 14l9-5-9-5-9 5 9 5z" />
-                        <path d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z" />
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 14l9-5-9-5-9 5 9 5zm0 0l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14zm-4 6v-7.5l4-2.222" />
-                      </svg>
-                    </div>
-                    <div className="ml-5 w-0 flex-1">
-                      <dl>
-                        <dt className="text-sm font-medium text-gray-500 truncate">Students</dt>
-                        <dd className="flex items-baseline">
-                          <div className="text-2xl font-semibold text-gray-900">
-                            {users.filter(user => user.profession === 'student').length}
-                          </div>
-                        </dd>
-                      </dl>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
+        {/* Add tab navigation */}
+        <div className="mb-6 border-b border-gray-200">
+          <nav className="-mb-px flex space-x-8">
+            <button
+              onClick={() => setSelectedTab('dashboard')}
+              className={`py-4 px-1 text-sm font-medium ${
+                selectedTab === 'dashboard' 
+                  ? 'border-indigo-500 text-indigo-600 border-b-2' 
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              Dashboard
+            </button>
+            <button
+              onClick={() => setSelectedTab('students')}
+              className={`py-4 px-1 text-sm font-medium ${
+                selectedTab === 'students' 
+                  ? 'border-indigo-500 text-indigo-600 border-b-2' 
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              Student Enrollments
+            </button>
+          </nav>
         </div>
+
+        {/* Conditionally render content based on selected tab */}
+        {renderTabContent()}
       </main>
     </div>
   );
