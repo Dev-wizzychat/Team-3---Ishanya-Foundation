@@ -110,34 +110,18 @@ export default function LandingPage() {
   return (
     <div className="min-h-screen flex flex-col">
       <SocialSidebar />
-      <nav className="fixed top-0 left-0 right-0 bg-gray-100 shadow-md z-10 h-20 flex items-center">
-        <div className="max-w-1xl mx-auto px-0 py-2 flex justify-between items-center w-full">
-          <div className="flex items-center space-x-2">
-            <img
-              src="https://ishanyaindia.org/wp-content/uploads/2020/02/Ishanya_logo.png"
-              alt="Ishanya Logo"
-              className="h-14 w-auto"
-            />
-            <span
-              className="text-3xl font-semibold text-gray-800"
-              style={{ fontFamily: "Times New Roman, serif" }}
-            >
-              Ishanya India Foundation
-            </span>
-          </div>
-          <div className="mt-6 flex space-x-4">
-            <a
-              href="/login"
-              className="px-4 py-2 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 transition duration-300"
-            >
-              Teacher Login
-            </a>
-            <a
-              href="/login"
-              className="px-4 py-2 text-sm bg-gray-700 text-white rounded-md hover:bg-gray-800 transition duration-300"
-            >
-              Admin Login
-            </a>
+      <nav className="fixed top-0 left-0 right-0 bg-white shadow-md z-10 h-16 flex items-center">
+        <div className="max-w-6xl mx-auto px-4 py-2 flex justify-between items-center w-full">
+          <div className="flex items-center justify-between w-full h-full">
+            <div className="flex items-center space-x-2">
+              <BookOpen className="h-7 w-7 text-blue-600" />
+              <span className="text-xl font-semibold text-gray-800">Ishanya</span>
+            </div>
+            <div className="flex items-center">
+              <a href="/login" className="px-4 py-2 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 transition duration-300">
+                Login
+              </a>
+            </div>
           </div>
         </div>
       </nav>
