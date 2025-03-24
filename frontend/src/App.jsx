@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 import { Button } from './components/button';
 import EnrollForm from './Pages/EnrollForm'
 import StudentDashboard from "./Pages/StudentDashboard";
-import Home from "./Pages/HomePage2";
+import Home from "./Pages/HomePage";
 import AdminDashboard from "./Pages/admindashboard";
 import EducatorDashboard from "./Pages/EducatorDashboard";
 import LoginPage from "./Pages/LoginPage";
