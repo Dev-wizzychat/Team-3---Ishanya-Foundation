@@ -52,28 +52,29 @@ const LoginPage = () => {
       formData.append("password", password);
   
       const API = import.meta.env.VITE_API_BASE_URL;
-
+  
       const response = await axios.post(`${API}/login`, formData, {
         headers: {
-          "Content-Type": "application/x-www-form-urlencoded",
-          Authorization: `Bearer ${localStorage.getItem("authToken")}`
+          "Content-Type": "application/x-www-form-urlencoded"
         },
       });
   
-      if (response.data.access_token) {
-        localStorage.setItem("authToken", response.data.access_token);
+      const { access_token, role, profile } = response.data;
+  
+      if (access_token) {
+        // ✅ Save token, role, and profile
+        localStorage.setItem("authToken", access_token);
         localStorage.setItem("role", role);
         localStorage.setItem("userProfile", JSON.stringify(profile));
-
-        setSuccessMessage(`Successfully logged in as ${userType}`);
+  
+        setSuccessMessage(`Successfully logged in as ${role}`);
   
         setTimeout(() => {
-          if (role === "admin") {
-            window.location.href = "/admin";
-          } else if (role === "educator") {
+          // ✅ Use role to route dynamically
+          if (role === "educator") {
             window.location.href = "/educator-dashboard";
           } else {
-            window.location.href = "/";
+            window.location.href = "/admin";
           }
         }, 1000);
       } else {
@@ -97,9 +98,7 @@ const LoginPage = () => {
     } finally {
       setIsLoading(false);
     }
-  };
-  
-  
+  };  
   
   // Message display component
   const MessageDisplay = ({ error, success }) => {

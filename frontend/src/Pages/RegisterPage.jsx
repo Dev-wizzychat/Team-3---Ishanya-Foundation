@@ -73,7 +73,7 @@ const RegisterPage = () => {
     setSuccessMessage("");
   
     // Validate inputs
-    const isValid = userType === "teacher"
+    const isValid = userType === "educator"
       ? validateTeacherForm()
       : validateAdminForm();
   
