@@ -6,11 +6,13 @@ from typing import List, Optional, Literal, ForwardRef
 from enum import Enum
 from datetime import datetime, date, timedelta
 from pymongo import MongoClient
+from pymongo.errors import PyMongoError
 from bson import ObjectId
 from jose import JWTError, jwt
 from dotenv import load_dotenv
 import bcrypt
 import os
+import traceback
 
 # --------------------- Load Config ---------------------
 load_dotenv()
@@ -37,9 +39,10 @@ educators_collection = db["educators"]
 users_collection = db["users"]
 programs_collection = db["programs"]
 sessions_collection = db["sessions"]
-assessments_collection = db["assessments"] 
-employees_collection = db["employees"] 
+assessments_collection = db["assessments"]
+employees_collection = db["employees"]
 # enrollments_collection = db["enrollment_forms"]
+
 
 # --------------------- Enums ---------------------
 class Gender(str, Enum):
@@ -47,10 +50,12 @@ class Gender(str, Enum):
     FEMALE = "female"
     OTHER = "other"
 
+
 class Status(str, Enum):
     ACTIVE = "active"
     INACTIVE = "inactive"
     ENDED = "ended"
+
 
 class BloodGroup(str, Enum):
     A_POSITIVE = "A+"
@@ -62,28 +67,34 @@ class BloodGroup(str, Enum):
     AB_POSITIVE = "AB+"
     AB_NEGATIVE = "AB-"
 
+
 # --------------------- Utility ---------------------
 class PyObjectId(ObjectId):
     @classmethod
     def __get_validators__(cls):
         yield cls.validate
+
     @classmethod
     def validate(cls, v):
         if not ObjectId.is_valid(v):
             raise ValueError("Invalid ObjectId")
         return ObjectId(v)
 
+
 def hash_password(password: str) -> str:
     return bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
 
+
 def verify_password(plain_password, hashed_password) -> bool:
     return bcrypt.checkpw(plain_password.encode(), hashed_password.encode())
+
 
 def create_access_token(data: dict, expires_delta: timedelta = None):
     to_encode = data.copy()
     expire = datetime.utcnow() + (expires_delta or timedelta(minutes=15))
     to_encode.update({"exp": expire})
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+
 
 # --------------------- Weekly Assessment ---------------------
 # class WeeklyAssessment(BaseModel):
@@ -106,6 +117,7 @@ def create_access_token(data: dict, expires_delta: timedelta = None):
 EducatorRef = ForwardRef("Educator")
 StudentRef = ForwardRef("Student")
 
+
 class Educator(BaseModel):
     educator_id: str
     employee_id: str
@@ -120,12 +132,13 @@ class Educator(BaseModel):
     blood_group: BloodGroup
     program: List[str]  # ✅ multiple programs
 
+
 class Student(BaseModel):
     student_id: str
     name: str
     photo_url: Optional[str] = None
     gender: Gender
-    date_of_birth: date
+    # date_of_birth: date
     primary_diagnosis: str
     comorbidity: Optional[str] = None
     enrollment_year: int
@@ -136,12 +149,14 @@ class Student(BaseModel):
     program: List[str]  # ✅ multiple programs
     educator_ids: List[str]  # ✅ multiple educators
 
+
 class Session(BaseModel):
     session_id: Optional[str] = None
     date_timing: datetime
     duration: int
     program: str
     educator_id: str  # linked to educator
+
 
 class Assessment(BaseModel):
     assessment_id: Optional[str] = None
@@ -153,6 +168,7 @@ class Assessment(BaseModel):
     program: str
     educator_id: str
     student_id: str
+
 
 class Employee(BaseModel):
     employee_id: str
@@ -172,6 +188,7 @@ class Employee(BaseModel):
     work_location: Optional[str] = None
     emergency_contact_number: str
     blood_group: BloodGroup
+
 
 # --------------------- Enrollment Form ---------------------
 class EnrollmentForm(BaseModel):
@@ -200,7 +217,7 @@ class EnrollmentForm(BaseModel):
 class UserRegister(BaseModel):
     email: EmailStr
     password: str
-    role: Literal["student", "educator", "admin"] 
+    role: Literal["student", "educator", "admin"]
     profile_id: str
 
 
@@ -216,6 +233,7 @@ Educator.update_forward_refs()
 
 # --------------------- OAuth2 & Auth Helpers ---------------------
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
+
 
 async def get_current_user(token: str = Depends(oauth2_scheme)):
     credentials_exception = HTTPException(
@@ -235,10 +253,12 @@ async def get_current_user(token: str = Depends(oauth2_scheme)):
     except JWTError:
         raise credentials_exception
 
+
 async def get_admin_user(current_user: dict = Depends(get_current_user)):
     if current_user["role"] != "admin":
         raise HTTPException(status_code=403, detail="Admin access required")
     return current_user
+
 
 def serialize(doc):
     doc["id"] = str(doc["_id"])
@@ -254,12 +274,14 @@ async def register_user(user: UserRegister):
         raise HTTPException(status_code=400, detail="User already exists")
 
     hashed_pw = hash_password(user.password)
-    users_collection.insert_one({
-        "email": user.email,
-        "password": hashed_pw,
-        "role": user.role,
-        "profile_id": user.profile_id
-    })
+    users_collection.insert_one(
+        {
+            "email": user.email,
+            "password": hashed_pw,
+            "role": user.role,
+            "profile_id": user.profile_id,
+        }
+    )
 
     return {"message": "User registered successfully"}
 
@@ -303,6 +325,7 @@ async def protected_route(current_user: dict = Depends(get_current_user)):
 def homepage():
     return {"message": "Welcome to Ishanya Foundation"}
 
+
 @app.get("/faqs")
 def get_faqs():
     return {
@@ -314,13 +337,47 @@ def get_faqs():
         ]
     }
 
+
 # --------------------- Dashboards ---------------------
-# @app.get("/student-dashboard/{student_id}")
-# async def student_dashboard(student_id: str):
-#     student = students_collection.find_one({"student_id": student_id})
-#     if not student:
-#         raise HTTPException(status_code=404, detail="Student not found")
-#     return serialize(student)
+# -------------------- Add Student API --------------------
+@app.post("/add-student/")
+async def add_student(student: Student):
+    student_data = student.dict(by_alias=True, exclude_none=True)
+
+    # Check if student already exists
+    if students_collection.find_one({"student_id": student.student_id}):
+        raise HTTPException(status_code=400, detail="Student already exists")
+
+    students_collection.insert_one(student_data)
+    return {"message": "Student added successfully"}
+
+
+# -------------------- View Student API --------------------
+@app.get("/view-student/{student_id}")
+async def view_student(student_id: str):
+    student = students_collection.find_one(
+        {"student_id": student_id}, {"_id": 0}
+    )  # Exclude MongoDB `_id`
+    if not student:
+        raise HTTPException(status_code=404, detail="Student not found")
+    return student
+
+
+# -------------------- Update Student API --------------------
+@app.put("/update-student/{student_id}")
+async def update_student(student_id: str, updated_data: Student):
+    update_data = updated_data.dict(by_alias=True, exclude_none=True)
+    result = students_collection.update_one(
+        {"student_id": student_id}, {"$set": update_data}
+    )
+
+    if result.modified_count == 0:
+        raise HTTPException(
+            status_code=404, detail="Student not found or no changes made"
+        )
+
+    return {"message": "Student updated successfully"}
+
 
 # @app.get("/employee-dashboard/{employee_id}")
 # async def employee_dashboard(employee_id: str):
@@ -328,6 +385,7 @@ def get_faqs():
 #     if not educator:
 #         raise HTTPException(status_code=404, detail="Employee not found")
 #     return serialize(educator)
+
 
 @app.get("/educator-dashboard")
 async def educator_dashboard(current_user: dict = Depends(get_current_user)):
@@ -353,6 +411,7 @@ async def educator_dashboard(current_user: dict = Depends(get_current_user)):
         "date_of_joining": employee.get("date_of_joining"),
         "program": educator.get("program", []),
     }
+
 
 # --------------------- Enrollment Form Submission ---------------------
 # @app.post("/enrollment-form", response_model=dict)
