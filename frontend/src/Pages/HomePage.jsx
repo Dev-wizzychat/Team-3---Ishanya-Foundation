@@ -123,7 +123,7 @@ export default function LandingPage() {
                 textShadow: "2px 2px 5px rgba(219, 219, 219, 0.5)",
               }}
             >
-              ISHANAYA INDIA FOUNDATION
+              ISHANYA INDIA FOUNDATION
             </span>
           </div>
 

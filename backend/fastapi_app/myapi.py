@@ -37,7 +37,9 @@ educators_collection = db["educators"]
 users_collection = db["users"]
 programs_collection = db["programs"]
 sessions_collection = db["sessions"]
-enrollments_collection = db["enrollment_forms"]
+assessments_collection = db["assessments"] 
+employees_collection = db["employees"] 
+# enrollments_collection = db["enrollment_forms"]
 
 # --------------------- Enums ---------------------
 class Gender(str, Enum):
@@ -84,98 +86,92 @@ def create_access_token(data: dict, expires_delta: timedelta = None):
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
 
 # --------------------- Weekly Assessment ---------------------
-class WeeklyAssessment(BaseModel):
-    week: int
-    year: int
-    score: float
-    attendance_percentage: float
-    comments: Optional[str] = None
+# class WeeklyAssessment(BaseModel):
+#     week: int
+#     year: int
+#     score: float
+#     attendance_percentage: float
+#     comments: Optional[str] = None
 
 
-class Performance(BaseModel):
-    weekly_assessments: List[WeeklyAssessment] = []
-    current_level: int = 1
-    attendance_percentage: float = 100.0
-    total_sessions_attended: int = 0
-    total_sessions: int = 0
+# class Performance(BaseModel):
+#     weekly_assessments: List[WeeklyAssessment] = []
+#     current_level: int = 1
+#     attendance_percentage: float = 100.0
+#     total_sessions_attended: int = 0
+#     total_sessions: int = 0
 
 
 # --------------------- ForwardRef Models ---------------------
 EducatorRef = ForwardRef("Educator")
 StudentRef = ForwardRef("Student")
 
+class Educator(BaseModel):
+    educator_id: str
+    employee_id: str
+    name: str
+    photo_url: Optional[str] = None
+    designation: str
+    email: EmailStr
+    date_of_birth: date
+    phone: str
+    department: str
+    employment_type: str
+    blood_group: BloodGroup
+    program: List[str]  # ✅ multiple programs
 
-# --------------------- Student ---------------------
 class Student(BaseModel):
+    student_id: str
     name: str
     photo_url: Optional[str] = None
     gender: Gender
     date_of_birth: date
-    student_id: str
-    ud_id: str
     primary_diagnosis: str
-    comorbidity: str
+    comorbidity: Optional[str] = None
     enrollment_year: int
     status: Status
     email: EmailStr
-    program: str
-    educator_id: Optional[str] = None
-    secondary_educator_id: Optional[str] = None
-    number_of_sessions: int = 0
     fathers_name: str
     mothers_name: str
-    blood_group: BloodGroup
-    performance: Performance = Field(default_factory=Performance)
+    program: List[str]  # ✅ multiple programs
+    educator_ids: List[str]  # ✅ multiple educators
 
-
-# --------------------- Educator ---------------------
-class Educator(BaseModel):
-    name: str
-    employee_id: str
-    photo_url: Optional[str] = None
-    designation: str
-    program: str
-    email: EmailStr
-    date_of_birth: date
-    phone: str
-    sessions: List[str] = []
-    students: List[str] = []
-    total_students: int = 0
-    schedule: List[dict] = []
-
-
-# --------------------- Session ---------------------
 class Session(BaseModel):
+    session_id: Optional[str] = None
     date_timing: datetime
     duration: int
-    topic: str
+    program: str
+    educator_id: str  # linked to educator
+
+class Assessment(BaseModel):
+    assessment_id: Optional[str] = None
+    week: int
+    year: int
+    score: float
+    attendance_percentage: float
+    comments: Optional[str] = None
+    program: str
     educator_id: str
-    students: List[str]
-    attendance: List[str]
+    student_id: str
 
-
-class SessionCreate(BaseModel):
-    date: datetime
-    duration: int
-    topic: str
-    program_id: str
-    educator_id: str
-    students: List[str]
-    max_students: int = 30
-
-
-# --------------------- Program ---------------------
-class Program(BaseModel):
+class Employee(BaseModel):
+    employee_id: str
     name: str
-    description: str
-    duration: int  # in months
+    gender: Gender
+    photo_url: Optional[str] = None
+    designation: str
+    department: str
+    employment_type: str
+    program: str
+    email: EmailStr
+    phone: str
+    date_of_birth: date
+    date_of_joining: date
     status: Status
-    sessions: List[str] = []
-    students: List[str] = []
-    educators: List[str] = []
-    created_at: datetime = Field(default_factory=datetime.utcnow)
-    updated_at: datetime = Field(default_factory=datetime.utcnow)
-
+    tenure: Optional[int] = None
+    work_location: Optional[str] = None
+    emergency_contact_number: str
+    blood_group: BloodGroup
 
 # --------------------- Enrollment Form ---------------------
 class EnrollmentForm(BaseModel):
@@ -204,7 +200,8 @@ class EnrollmentForm(BaseModel):
 class UserRegister(BaseModel):
     email: EmailStr
     password: str
-    role: Literal["student", "educator", "admin"] = "student"
+    role: Literal["student", "educator", "admin"] 
+    profile_id: str
 
 
 class Token(BaseModel):
@@ -260,7 +257,8 @@ async def register_user(user: UserRegister):
     users_collection.insert_one({
         "email": user.email,
         "password": hashed_pw,
-        "role": user.role
+        "role": user.role,
+        "profile_id": user.profile_id
     })
 
     return {"message": "User registered successfully"}
@@ -272,11 +270,25 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends()):
     if not user or not verify_password(form_data.password, user["password"]):
         raise HTTPException(status_code=401, detail="Invalid credentials")
 
+    # Create token
     token_data = {"sub": user["email"], "role": user["role"]}
-    access_token = create_access_token(
-        data=token_data, expires_delta=timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-    )
-    return {"access_token": access_token, "token_type": "bearer"}
+    access_token = create_access_token(data=token_data)
+
+    # Fetch full profile using role + profile_id
+    profile = None
+    if user["role"] == "educator":
+        profile = educators_collection.find_one({"educator_id": user["profile_id"]})
+    elif user["role"] == "student":
+        profile = students_collection.find_one({"student_id": user["profile_id"]})
+    elif user["role"] == "admin":
+        profile = employees_collection.find_one({"employee_id": user["profile_id"]})
+
+    return {
+        "access_token": access_token,
+        "token_type": "bearer",
+        "role": user["role"],
+        "profile": serialize(profile) if profile else None,
+    }
 
 
 @app.get("/protected")
@@ -303,205 +315,230 @@ def get_faqs():
     }
 
 # --------------------- Dashboards ---------------------
-@app.get("/student-dashboard/{student_id}")
-async def student_dashboard(student_id: str):
-    student = students_collection.find_one({"student_id": student_id})
-    if not student:
-        raise HTTPException(status_code=404, detail="Student not found")
-    return serialize(student)
+# @app.get("/student-dashboard/{student_id}")
+# async def student_dashboard(student_id: str):
+#     student = students_collection.find_one({"student_id": student_id})
+#     if not student:
+#         raise HTTPException(status_code=404, detail="Student not found")
+#     return serialize(student)
 
-@app.get("/employee-dashboard/{employee_id}")
-async def employee_dashboard(employee_id: str):
-    educator = educators_collection.find_one({"employee_id": employee_id})
+# @app.get("/employee-dashboard/{employee_id}")
+# async def employee_dashboard(employee_id: str):
+#     educator = educators_collection.find_one({"employee_id": employee_id})
+#     if not educator:
+#         raise HTTPException(status_code=404, detail="Employee not found")
+#     return serialize(educator)
+
+@app.get("/educator-dashboard")
+async def educator_dashboard(current_user: dict = Depends(get_current_user)):
+    if current_user["role"] != "educator":
+        raise HTTPException(status_code=403, detail="Educator access required")
+
+    educator = educators_collection.find_one({"email": current_user["email"]})
     if not educator:
-        raise HTTPException(status_code=404, detail="Employee not found")
-    return serialize(educator)
+        raise HTTPException(status_code=404, detail="Educator not found")
+
+    employee = employees_collection.find_one({"employee_id": educator["employee_id"]})
+    if not employee:
+        raise HTTPException(status_code=404, detail="Employee record not found")
+
+    return {
+        "name": educator["name"],
+        "employee_id": educator["employee_id"],
+        "photo_url": educator.get("photo_url"),
+        "designation": educator["designation"],
+        "email": educator["email"],
+        "department": educator["department"],
+        "phone": educator["phone"],
+        "date_of_joining": employee.get("date_of_joining"),
+        "program": educator.get("program", []),
+    }
 
 # --------------------- Enrollment Form Submission ---------------------
-@app.post("/enrollment-form", response_model=dict)
-async def submit_enrollment_form(enrollment: EnrollmentForm):
-    if enrollment.date_of_birth > date.today():
-        raise HTTPException(status_code=400, detail="Invalid date of birth")
-    result = enrollments_collection.insert_one(enrollment.dict())
-    return {
-        "message": "Enrollment form submitted successfully",
-        "enrollment_id": str(result.inserted_id),
-        "status": "pending",
-    }
+# @app.post("/enrollment-form", response_model=dict)
+# async def submit_enrollment_form(enrollment: EnrollmentForm):
+#     if enrollment.date_of_birth > date.today():
+#         raise HTTPException(status_code=400, detail="Invalid date of birth")
+#     result = enrollments_collection.insert_one(enrollment.dict())
+#     return {
+#         "message": "Enrollment form submitted successfully",
+#         "enrollment_id": str(result.inserted_id),
+#         "status": "pending",
+#     }
 
-# --------------------- Admin: Students ---------------------
-@app.post("/admin/students/", response_model=dict)
-async def add_student(student: Student, admin: dict = Depends(get_admin_user)):
-    result = students_collection.insert_one(student.dict())
-    return {"id": str(result.inserted_id)}
+# # --------------------- Admin: Students ---------------------
+# @app.post("/admin/students/", response_model=dict)
+# async def add_student(student: Student, admin: dict = Depends(get_admin_user)):
+#     result = students_collection.insert_one(student.dict())
+#     return {"id": str(result.inserted_id)}
 
-@app.get("/admin/students/", response_model=List[dict])
-async def view_all_students(admin: dict = Depends(get_admin_user)):
-    return [serialize(s) for s in students_collection.find()]
+# @app.get("/admin/students/", response_model=List[dict])
+# async def view_all_students(admin: dict = Depends(get_admin_user)):
+#     return [serialize(s) for s in students_collection.find()]
 
-@app.get("/admin/students/{student_id}", response_model=dict)
-async def view_student_details(student_id: str, admin: dict = Depends(get_admin_user)):
-    student = students_collection.find_one({"_id": ObjectId(student_id)})
-    if not student:
-        raise HTTPException(status_code=404, detail="Student not found")
-    return serialize(student)
+# @app.get("/admin/students/{student_id}", response_model=dict)
+# async def view_student_details(student_id: str, admin: dict = Depends(get_admin_user)):
+#     student = students_collection.find_one({"_id": ObjectId(student_id)})
+#     if not student:
+#         raise HTTPException(status_code=404, detail="Student not found")
+#     return serialize(student)
 
-@app.put("/admin/students/{student_id}", response_model=dict)
-async def update_student(student_id: str, student: Student, admin: dict = Depends(get_admin_user)):
-    result = students_collection.update_one({"_id": ObjectId(student_id)}, {"$set": student.dict()})
-    if result.matched_count == 0:
-        raise HTTPException(status_code=404, detail="Student not found")
-    return {"message": "Student updated successfully"}
+# @app.put("/admin/students/{student_id}", response_model=dict)
+# async def update_student(student_id: str, student: Student, admin: dict = Depends(get_admin_user)):
+#     result = students_collection.update_one({"_id": ObjectId(student_id)}, {"$set": student.dict()})
+#     if result.matched_count == 0:
+#         raise HTTPException(status_code=404, detail="Student not found")
+#     return {"message": "Student updated successfully"}
 
-@app.delete("/admin/students/{student_id}", response_model=dict)
-async def delete_student(student_id: str, admin: dict = Depends(get_admin_user)):
-    result = students_collection.delete_one({"_id": ObjectId(student_id)})
-    if result.deleted_count == 0:
-        raise HTTPException(status_code=404, detail="Student not found")
-    return {"message": "Student deleted successfully"}
+# @app.delete("/admin/students/{student_id}", response_model=dict)
+# async def delete_student(student_id: str, admin: dict = Depends(get_admin_user)):
+#     result = students_collection.delete_one({"_id": ObjectId(student_id)})
+#     if result.deleted_count == 0:
+#         raise HTTPException(status_code=404, detail="Student not found")
+#     return {"message": "Student deleted successfully"}
 
-# --------------------- Admin: Programs ---------------------
-@app.post("/admin/programs/", response_model=dict)
-async def add_program(program: Program, admin: dict = Depends(get_admin_user)):
-    result = programs_collection.insert_one(program.dict())
-    return {"id": str(result.inserted_id)}
+# # --------------------- Admin: Programs ---------------------
+# @app.post("/admin/programs/", response_model=dict)
+# async def add_program(program: Program, admin: dict = Depends(get_admin_user)):
+#     result = programs_collection.insert_one(program.dict())
+#     return {"id": str(result.inserted_id)}
 
-@app.get("/admin/programs/", response_model=List[dict])
-async def view_all_programs(admin: dict = Depends(get_admin_user)):
-    return [serialize(p) for p in programs_collection.find()]
+# @app.get("/admin/programs/", response_model=List[dict])
+# async def view_all_programs(admin: dict = Depends(get_admin_user)):
+#     return [serialize(p) for p in programs_collection.find()]
 
-@app.put("/admin/programs/{program_id}", response_model=dict)
-async def update_program(program_id: str, program: Program, admin: dict = Depends(get_admin_user)):
-    result = programs_collection.update_one({"_id": ObjectId(program_id)}, {"$set": program.dict()})
-    if result.matched_count == 0:
-        raise HTTPException(status_code=404, detail="Program not found")
-    return {"message": "Program updated successfully"}
+# @app.put("/admin/programs/{program_id}", response_model=dict)
+# async def update_program(program_id: str, program: Program, admin: dict = Depends(get_admin_user)):
+#     result = programs_collection.update_one({"_id": ObjectId(program_id)}, {"$set": program.dict()})
+#     if result.matched_count == 0:
+#         raise HTTPException(status_code=404, detail="Program not found")
+#     return {"message": "Program updated successfully"}
 
-@app.delete("/admin/programs/{program_id}", response_model=dict)
-async def delete_program(program_id: str, admin: dict = Depends(get_admin_user)):
-    result = programs_collection.delete_one({"_id": ObjectId(program_id)})
-    if result.deleted_count == 0:
-        raise HTTPException(status_code=404, detail="Program not found")
-    return {"message": "Program deleted successfully"}
+# @app.delete("/admin/programs/{program_id}", response_model=dict)
+# async def delete_program(program_id: str, admin: dict = Depends(get_admin_user)):
+#     result = programs_collection.delete_one({"_id": ObjectId(program_id)})
+#     if result.deleted_count == 0:
+#         raise HTTPException(status_code=404, detail="Program not found")
+#     return {"message": "Program deleted successfully"}
 
-# --------------------- Admin: Employees ---------------------
-@app.post("/admin/employees/", response_model=dict)
-async def add_employee(educator: Educator, admin: dict = Depends(get_admin_user)):
-    result = educators_collection.insert_one(educator.dict())
-    return {"id": str(result.inserted_id)}
+# # --------------------- Admin: Employees ---------------------
+# @app.post("/admin/employees/", response_model=dict)
+# async def add_employee(educator: Educator, admin: dict = Depends(get_admin_user)):
+#     result = educators_collection.insert_one(educator.dict())
+#     return {"id": str(result.inserted_id)}
 
-@app.get("/admin/employees/", response_model=List[dict])
-async def view_all_employees(admin: dict = Depends(get_admin_user)):
-    return [serialize(e) for e in educators_collection.find()]
+# @app.get("/admin/employees/", response_model=List[dict])
+# async def view_all_employees(admin: dict = Depends(get_admin_user)):
+#     return [serialize(e) for e in educators_collection.find()]
 
-@app.get("/admin/employees/{employee_id}", response_model=dict)
-async def view_employee_details(employee_id: str, admin: dict = Depends(get_admin_user)):
-    educator = educators_collection.find_one({"_id": ObjectId(employee_id)})
-    if not educator:
-        raise HTTPException(status_code=404, detail="Employee not found")
-    return serialize(educator)
+# @app.get("/admin/employees/{employee_id}", response_model=dict)
+# async def view_employee_details(employee_id: str, admin: dict = Depends(get_admin_user)):
+#     educator = educators_collection.find_one({"_id": ObjectId(employee_id)})
+#     if not educator:
+#         raise HTTPException(status_code=404, detail="Employee not found")
+#     return serialize(educator)
 
-@app.put("/admin/employees/{employee_id}", response_model=dict)
-async def update_employee(employee_id: str, educator: Educator, admin: dict = Depends(get_admin_user)):
-    result = educators_collection.update_one({"_id": ObjectId(employee_id)}, {"$set": educator.dict()})
-    if result.matched_count == 0:
-        raise HTTPException(status_code=404, detail="Employee not found")
-    return {"message": "Employee updated successfully"}
+# @app.put("/admin/employees/{employee_id}", response_model=dict)
+# async def update_employee(employee_id: str, educator: Educator, admin: dict = Depends(get_admin_user)):
+#     result = educators_collection.update_one({"_id": ObjectId(employee_id)}, {"$set": educator.dict()})
+#     if result.matched_count == 0:
+#         raise HTTPException(status_code=404, detail="Employee not found")
+#     return {"message": "Employee updated successfully"}
 
-@app.delete("/admin/employees/{employee_id}", response_model=dict)
-async def delete_employee(employee_id: str, admin: dict = Depends(get_admin_user)):
-    result = educators_collection.delete_one({"_id": ObjectId(employee_id)})
-    if result.deleted_count == 0:
-        raise HTTPException(status_code=404, detail="Employee not found")
-    return {"message": "Employee deleted successfully"}
+# @app.delete("/admin/employees/{employee_id}", response_model=dict)
+# async def delete_employee(employee_id: str, admin: dict = Depends(get_admin_user)):
+#     result = educators_collection.delete_one({"_id": ObjectId(employee_id)})
+#     if result.deleted_count == 0:
+#         raise HTTPException(status_code=404, detail="Employee not found")
+#     return {"message": "Employee deleted successfully"}
 
-# --------------------- Admin: Sessions ---------------------
-@app.post("/admin/sessions/", response_model=dict)
-async def add_session(session: SessionCreate, admin: dict = Depends(get_admin_user)):
-    result = sessions_collection.insert_one(session.dict())
-    return {"id": str(result.inserted_id)}
+# # --------------------- Admin: Sessions ---------------------
+# @app.post("/admin/sessions/", response_model=dict)
+# async def add_session(session: SessionCreate, admin: dict = Depends(get_admin_user)):
+#     result = sessions_collection.insert_one(session.dict())
+#     return {"id": str(result.inserted_id)}
 
-@app.get("/admin/sessions/", response_model=List[dict])
-async def view_all_sessions(admin: dict = Depends(get_admin_user)):
-    return [serialize(s) for s in sessions_collection.find()]
+# @app.get("/admin/sessions/", response_model=List[dict])
+# async def view_all_sessions(admin: dict = Depends(get_admin_user)):
+#     return [serialize(s) for s in sessions_collection.find()]
 
-@app.put("/admin/sessions/{session_id}", response_model=dict)
-async def update_session(session_id: str, session: SessionCreate, admin: dict = Depends(get_admin_user)):
-    result = sessions_collection.update_one({"_id": ObjectId(session_id)}, {"$set": session.dict()})
-    if result.matched_count == 0:
-        raise HTTPException(status_code=404, detail="Session not found")
-    return {"message": "Session updated successfully"}
+# @app.put("/admin/sessions/{session_id}", response_model=dict)
+# async def update_session(session_id: str, session: SessionCreate, admin: dict = Depends(get_admin_user)):
+#     result = sessions_collection.update_one({"_id": ObjectId(session_id)}, {"$set": session.dict()})
+#     if result.matched_count == 0:
+#         raise HTTPException(status_code=404, detail="Session not found")
+#     return {"message": "Session updated successfully"}
 
-@app.delete("/admin/sessions/{session_id}", response_model=dict)
-async def delete_session(session_id: str, admin: dict = Depends(get_admin_user)):
-    result = sessions_collection.delete_one({"_id": ObjectId(session_id)})
-    if result.deleted_count == 0:
-        raise HTTPException(status_code=404, detail="Session not found")
-    return {"message": "Session deleted successfully"}
+# @app.delete("/admin/sessions/{session_id}", response_model=dict)
+# async def delete_session(session_id: str, admin: dict = Depends(get_admin_user)):
+#     result = sessions_collection.delete_one({"_id": ObjectId(session_id)})
+#     if result.deleted_count == 0:
+#         raise HTTPException(status_code=404, detail="Session not found")
+#     return {"message": "Session deleted successfully"}
 
-# --------------------- Admin: Stakeholder Directory ---------------------
-@app.get("/admin/stakeholder-directory")
-async def view_stakeholder_directory(admin: dict = Depends(get_admin_user)):
-    students = [serialize(s) for s in students_collection.find()]
-    educators = [serialize(e) for e in educators_collection.find()]
-    programs = [serialize(p) for p in programs_collection.find()]
-    return {
-        "students": students,
-        "educators": educators,
-        "programs": programs,
-        "total_students": len(students),
-        "total_educators": len(educators),
-        "total_programs": len(programs),
-    }
+# # --------------------- Admin: Stakeholder Directory ---------------------
+# @app.get("/admin/stakeholder-directory")
+# async def view_stakeholder_directory(admin: dict = Depends(get_admin_user)):
+#     students = [serialize(s) for s in students_collection.find()]
+#     educators = [serialize(e) for e in educators_collection.find()]
+#     programs = [serialize(p) for p in programs_collection.find()]
+#     return {
+#         "students": students,
+#         "educators": educators,
+#         "programs": programs,
+#         "total_students": len(students),
+#         "total_educators": len(educators),
+#         "total_programs": len(programs),
+#     }
 
-# --------------------- Admin: Enrollment Form Processing ---------------------
-@app.get("/admin/enrollment-forms", response_model=List[EnrollmentForm])
-async def view_enrollment_forms(status: Optional[str] = None, admin: dict = Depends(get_admin_user)):
-    query = {}
-    if status:
-        if status not in ["pending", "approved", "rejected"]:
-            raise HTTPException(status_code=400, detail="Invalid status")
-        query["status"] = status
-    forms = [serialize(f) for f in enrollments_collection.find(query)]
-    return forms
+# # --------------------- Admin: Enrollment Form Processing ---------------------
+# @app.get("/admin/enrollment-forms", response_model=List[EnrollmentForm])
+# async def view_enrollment_forms(status: Optional[str] = None, admin: dict = Depends(get_admin_user)):
+#     query = {}
+#     if status:
+#         if status not in ["pending", "approved", "rejected"]:
+#             raise HTTPException(status_code=400, detail="Invalid status")
+#         query["status"] = status
+#     forms = [serialize(f) for f in enrollments_collection.find(query)]
+#     return forms
 
-@app.put("/admin/enrollment-forms/{form_id}", response_model=dict)
-async def process_enrollment_form(
-    form_id: str,
-    status: Literal["approved", "rejected"],
-    admin: dict = Depends(get_admin_user),
-):
-    form = enrollments_collection.find_one({"_id": ObjectId(form_id)})
-    if not form:
-        raise HTTPException(status_code=404, detail="Enrollment form not found")
+# @app.put("/admin/enrollment-forms/{form_id}", response_model=dict)
+# async def process_enrollment_form(
+#     form_id: str,
+#     status: Literal["approved", "rejected"],
+#     admin: dict = Depends(get_admin_user),
+# ):
+#     form = enrollments_collection.find_one({"_id": ObjectId(form_id)})
+#     if not form:
+#         raise HTTPException(status_code=404, detail="Enrollment form not found")
 
-    enrollments_collection.update_one(
-        {"_id": ObjectId(form_id)}, {"$set": {"status": status}}
-    )
+#     enrollments_collection.update_one(
+#         {"_id": ObjectId(form_id)}, {"$set": {"status": status}}
+#     )
 
-    if status == "approved":
-        student_data = {
-            "name": form["student_name"],
-            "date_of_birth": form["date_of_birth"],
-            "gender": form["gender"],
-            "ud_id": form.get("ud_id", ""),
-            "primary_diagnosis": form["primary_diagnosis"],
-            "comorbidity": form.get("comorbidity"),
-            "email": form["email"],
-            "fathers_name": form["fathers_name"],
-            "mothers_name": form["mothers_name"],
-            "blood_group": form.get("blood_group", BloodGroup.O_POSITIVE),
-            "program": form.get("preferred_program", "General"),
-            "enrollment_year": datetime.utcnow().year,
-            "status": Status.ACTIVE,
-            "student_id": f"STU{datetime.utcnow().strftime('%Y%m%d%H%M%S')}",
-            "performance": Performance().dict(),
-        }
+#     if status == "approved":
+#         student_data = {
+#             "name": form["student_name"],
+#             "date_of_birth": form["date_of_birth"],
+#             "gender": form["gender"],
+#             "ud_id": form.get("ud_id", ""),
+#             "primary_diagnosis": form["primary_diagnosis"],
+#             "comorbidity": form.get("comorbidity"),
+#             "email": form["email"],
+#             "fathers_name": form["fathers_name"],
+#             "mothers_name": form["mothers_name"],
+#             "blood_group": form.get("blood_group", BloodGroup.O_POSITIVE),
+#             "program": form.get("preferred_program", "General"),
+#             "enrollment_year": datetime.utcnow().year,
+#             "status": Status.ACTIVE,
+#             "student_id": f"STU{datetime.utcnow().strftime('%Y%m%d%H%M%S')}",
+#             "performance": Performance().dict(),
+#         }
 
-        students_collection.insert_one(student_data)
-        return {
-            "message": "Enrollment form approved and student record created",
-            "student_id": student_data["student_id"],
-        }
+#         students_collection.insert_one(student_data)
+#         return {
+#             "message": "Enrollment form approved and student record created",
+#             "student_id": student_data["student_id"],
+#         }
 
-    return {"message": f"Enrollment form {status}", "form_id": form_id}
+#     return {"message": f"Enrollment form {status}", "form_id": form_id}
