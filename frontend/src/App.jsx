@@ -7,6 +7,7 @@ import Home from "./Pages/HomePage";
 import AdminDashboard from "./Pages/admindashboard";
 import EducatorDashboard from "./Pages/EducatorDashboard";
 import LoginPage from "./Pages/LoginPage";
+import RegisterPage from "./Pages/RegisterPage";
 import StudentList from "./Pages/StudentList"
 import TeacherList from "./Pages/TeacherList"
 import ProgramList from "./Pages/ProgramList"
@@ -25,7 +26,8 @@ function App() {
     <Router>
       <Routes>
         <Route path="/" element={<Home />} />
-        <Route path="/admin" element={<AdminDashboard />} />
+     <Route path="/admin" element={<AdminDashboard />} />
+        <Route path="/register" element={<RegisterPage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/enroll" element={<EnrollForm />} />
         <Route path="/admin/enroll" element={<NewEnrollmentform />} />

@@ -1,4 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import axios from "axios";
+
 
 const EducatorDashboard = () => {
   const [activeTab, setActiveTab] = useState('schedule');
@@ -12,16 +14,38 @@ const EducatorDashboard = () => {
   const [progressValue, setProgressValue] = useState(0);
   const [newPhoto, setNewPhoto] = useState(null);
   
-  // Mock teacher data
-  const teacherData = {
-    name: "Sarah Johnson",
-    subject: "Mathematics",
-    email: "sarah.johnson@school.edu",
-    phone: "(555) 123-4567",
-    department: "Science & Mathematics",
-    joinDate: "August 2022",
-    profilePic: "/api/placeholder/64/64"
-  };
+  const [teacherData, setTeacherData] = useState(null);
+
+  useEffect(() => {
+    const fetchEducatorProfile = async () => {
+      try {
+        const token = localStorage.getItem("authToken");
+        const API = import.meta.env.VITE_API_BASE_URL;
+  
+        const response = await axios.get(`${API}/educator-dashboard`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+  
+        setTeacherData({
+          name: response.data.name,
+          subject: response.data.designation,
+          email: response.data.email,
+          phone: response.data.phone,
+          department: response.data.department,
+          joinDate: new Date(response.data.date_of_joining).toLocaleDateString(),
+          profilePic: response.data.photo_url,
+          programList: response.data.program, // save it if needed
+        });
+      } catch (error) {
+        console.error("Failed to fetch educator profile", error);
+      }
+    };
+  
+    fetchEducatorProfile();
+  }, []);
+  
   
   // Mock schedule data
   const scheduleData = [
@@ -459,97 +483,118 @@ const EducatorDashboard = () => {
   };
   
   const renderProfile = () => {
-    return (
-      <div className="bg-white rounded-lg shadow-md overflow-hidden">
-        <div className="p-4 bg-blue-50 border-b border-blue-100">
-          <h3 className="text-lg font-semibold text-blue-800">Teacher Profile</h3>
-        </div>
-        <div className="p-6">
-          <div className="flex flex-col md:flex-row items-center md:items-start gap-6">
-            <div className="flex-shrink-0">
-              <img 
-                src={teacherData.profilePic} 
-                alt={teacherData.name} 
-                className="w-32 h-32 rounded-full border-4 border-blue-100"
-              />
-              <div className="mt-2">
-                <label htmlFor="photo-upload" className="cursor-pointer text-sm text-blue-600 hover:text-blue-800">
-                  Update Photo
-                </label>
-                <input 
-                  id="photo-upload" 
-                  type="file" 
-                  className="hidden" 
-                  accept="image/*"
-                  onChange={(e) => setNewPhoto(e.target.files[0])}
-                />
-                {newPhoto && (
-                  <div className="mt-2">
-                    <button 
-                      className="text-sm bg-blue-600 text-white px-2 py-1 rounded"
-                      onClick={handlePhotoUpdate}
-                    >
-                      Save Photo
-                    </button>
-                  </div>
-                )}
-              </div>
+    try {
+      if (!teacherData) {
+        return (
+          <div className="bg-white rounded-lg shadow-md overflow-hidden">
+            <div className="p-4 bg-blue-50 border-b border-blue-100">
+              <h3 className="text-lg font-semibold text-blue-800">Educator Profile</h3>
             </div>
-            
-            <div className="flex-1 space-y-4">
-              <div>
-                <h2 className="text-2xl font-bold text-gray-900">{teacherData.name}</h2>
-                <p className="text-lg text-blue-600">{teacherData.subject} Teacher</p>
+            <div className="p-6 text-gray-500 text-center">
+              Loading educator profile...
+            </div>
+          </div>
+        );
+      }
+  
+      return (
+        <div className="bg-white rounded-lg shadow-md overflow-hidden">
+          <div className="p-4 bg-blue-50 border-b border-blue-100">
+            <h3 className="text-lg font-semibold text-blue-800">Educator Profile</h3>
+          </div>
+          <div className="p-6">
+            <div className="flex flex-col md:flex-row items-center md:items-start gap-6">
+              <div className="flex-shrink-0">
+                <img 
+                  src={teacherData?.profilePic || "/default-avatar.png"} 
+                  alt={teacherData?.name || "Educator"} 
+                  className="w-32 h-32 rounded-full border-4 border-blue-100"
+                />
+                <div className="mt-2">
+                  <label htmlFor="photo-upload" className="cursor-pointer text-sm text-blue-600 hover:text-blue-800">
+                    Update Photo
+                  </label>
+                  <input 
+                    id="photo-upload" 
+                    type="file" 
+                    className="hidden" 
+                    accept="image/*"
+                    onChange={(e) => setNewPhoto(e.target.files[0])}
+                  />
+                  {newPhoto && (
+                    <div className="mt-2">
+                      <button 
+                        className="text-sm bg-blue-600 text-white px-2 py-1 rounded"
+                        onClick={handlePhotoUpdate}
+                      >
+                        Save Photo
+                      </button>
+                    </div>
+                  )}
+                </div>
               </div>
               
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-3">
-                  <div>
-                    <h4 className="text-sm font-medium text-gray-500">Email</h4>
-                    <p className="text-gray-900">{teacherData.email}</p>
+              <div className="flex-1 space-y-4">
+                <div>
+                  <h2 className="text-2xl font-bold text-gray-900">{teacherData?.name}</h2>
+                  <p className="text-lg text-blue-600">{teacherData?.subject || 'Educator'}</p>
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-3">
+                    <div>
+                      <h4 className="text-sm font-medium text-gray-500">Email</h4>
+                      <p className="text-gray-900">{teacherData?.email || "Not available"}</p>
+                    </div>
+                    <div>
+                      <h4 className="text-sm font-medium text-gray-500">Phone</h4>
+                      <p className="text-gray-900">{teacherData?.phone || "Not available"}</p>
+                    </div>
                   </div>
-                  <div>
-                    <h4 className="text-sm font-medium text-gray-500">Phone</h4>
-                    <p className="text-gray-900">{teacherData.phone}</p>
+                  
+                  <div className="space-y-3">
+                    <div>
+                      <h4 className="text-sm font-medium text-gray-500">Department</h4>
+                      <p className="text-gray-900">{teacherData?.department || "Not specified"}</p>
+                    </div>
+                    <div>
+                      <h4 className="text-sm font-medium text-gray-500">Joined</h4>
+                      <p className="text-gray-900">{teacherData?.joinDate || "Unknown"}</p>
+                    </div>
                   </div>
                 </div>
                 
-                <div className="space-y-3">
-                  <div>
-                    <h4 className="text-sm font-medium text-gray-500">Department</h4>
-                    <p className="text-gray-900">{teacherData.department}</p>
-                  </div>
-                  <div>
-                    <h4 className="text-sm font-medium text-gray-500">Joined</h4>
-                    <p className="text-gray-900">{teacherData.joinDate}</p>
-                  </div>
+                <div className="pt-4 border-t border-gray-200">
+                  <h4 className="text-sm font-medium text-gray-500 mb-2">Programs</h4>
+                  <ul className="list-disc pl-5 text-gray-700 space-y-1">
+                    {(teacherData?.programList || []).map((program, index) => (
+                      <li key={index}>{program}</li>
+                    ))}
+                  </ul>
                 </div>
-              </div>
-              
-              <div className="pt-4 border-t border-gray-200">
-                <h4 className="text-sm font-medium text-gray-500 mb-2">Qualifications & Certifications</h4>
-                <ul className="list-disc pl-5 text-gray-700 space-y-1">
-                  <li>M.S. Mathematics Education, State University (2019)</li>
-                  <li>B.S. Mathematics, National University (2016)</li>
-                  <li>State Teaching Certification - Advanced Mathematics</li>
-                  <li>AP Calculus Certified Instructor</li>
-                </ul>
-              </div>
-              
-              <div className="pt-4 border-t border-gray-200">
-                <button 
-                  className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-                  onClick={() => alert("Profile edit mode activated")}
-                >
-                  Edit Profile
-                </button>
+                
+                <div className="pt-4 border-t border-gray-200">
+                  <button 
+                    className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                    onClick={() => alert("Profile edit mode activated")}
+                  >
+                    Edit Profile
+                  </button>
+                </div>
               </div>
             </div>
           </div>
         </div>
-      </div>
-    );
-  };
+      );
+    } catch (err) {
+      console.error("Error rendering profile:", err);
+      return (
+        <div className="p-4 text-red-600">
+          Failed to load profile. Please try again later.
+        </div>
+      );
+    }
+  };  
   
   // Add Note Modal
   const renderAddNoteModal = () => {
@@ -738,12 +783,13 @@ const renderProfileMenu = () => {
                     setShowNotifications(false);
                   }}
                 >
-                  <img 
-                    src={teacherData.profilePic} 
-                    alt={teacherData.name} 
+                  {teacherData && (
+                    <img src={teacherData.profilePic || "/default-avatar.png"} 
+                    alt={teacherData.name || "Educator"} 
                     className="h-8 w-8 rounded-full"
-                  />
-                  <span className="font-medium text-gray-700 hidden md:block">{teacherData.name}</span>
+                    />
+                  )}
+                  <span className="font-medium text-gray-700 hidden md:block">{teacherData?.name || "Loading..."}</span>
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
                     <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
                   </svg>
