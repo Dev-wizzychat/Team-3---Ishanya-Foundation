@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import axios from "axios";
+import { useNavigate } from "react-router-dom";
 const daysOfWeek = [
   "All",
   "Monday",
@@ -13,6 +14,7 @@ const daysOfWeek = [
 const bloodGroups = ["A+", "A-", "B+", "B-", "O+", "O-", "AB+", "AB-"];
 
 function EnrollForm() {
+  const navigate = useNavigate();
   const [formData, setFormData] = useState({
     student_id: "",
     name: "",
@@ -184,25 +186,14 @@ function EnrollForm() {
           "Content-Type": "application/json",
         },
       });
-
-      // const response = await fetch(
-      //   `${import.meta.env.VITE_BACKEND_URL}/add-student/`,
-      //   {
-      //     method: "POST",
-      //     headers: {
-      //       "Content-Type": "application/json",
-      //     },
-      //     body: JSON.stringify(formData),
-      //   }
-      // );
-
       if (!response.ok) throw new Error("Submission failed");
 
       setSubmissionMessage("Successfully submitted");
+      navigate("/student-list");
     } catch (error) {
       setSubmissionMessage("Try again");
     }
-
+    navigate("/admin/student-list");
     setIsSubmitting(false);
   };
 
@@ -238,9 +229,8 @@ function EnrollForm() {
               name="student_id"
               value={formData.student_id}
               onChange={handleChange}
-              className={`w-full p-2 border rounded ${
-                errors.name ? "border-red-500" : "border-blue-300"
-              }`}
+              className={`w-full p-2 border rounded ${errors.name ? "border-red-500" : "border-blue-300"
+                }`}
               required
             />
             {errors.name && (
@@ -256,9 +246,8 @@ function EnrollForm() {
               name="name"
               value={formData.name}
               onChange={handleChange}
-              className={`w-full p-2 border rounded ${
-                errors.name ? "border-red-500" : "border-blue-300"
-              }`}
+              className={`w-full p-2 border rounded ${errors.name ? "border-red-500" : "border-blue-300"
+                }`}
               required
             />
             {errors.name && (
@@ -275,9 +264,8 @@ function EnrollForm() {
               name="gender"
               value={formData.gender}
               onChange={handleChange}
-              className={`w-full p-2 border rounded ${
-                errors.gender ? "border-red-500" : "border-blue-300"
-              }`}
+              className={`w-full p-2 border rounded ${errors.gender ? "border-red-500" : "border-blue-300"
+                }`}
               required
             >
               <option value="">Select Gender</option>
@@ -300,9 +288,8 @@ function EnrollForm() {
               name="father_name"
               value={formData.father_name}
               onChange={handleChange}
-              className={`w-full p-2 border rounded ${
-                errors.father_name ? "border-red-500" : "border-blue-300"
-              }`}
+              className={`w-full p-2 border rounded ${errors.father_name ? "border-red-500" : "border-blue-300"
+                }`}
               required
             />
             {errors.father_name && (
@@ -320,9 +307,8 @@ function EnrollForm() {
               name="mother_name"
               value={formData.mother_name}
               onChange={handleChange}
-              className={`w-full p-2 border rounded ${
-                errors.mother_name ? "border-red-500" : "border-blue-300"
-              }`}
+              className={`w-full p-2 border rounded ${errors.mother_name ? "border-red-500" : "border-blue-300"
+                }`}
               required
             />
             {errors.mother_name && (
@@ -340,9 +326,8 @@ function EnrollForm() {
               name="student_email"
               value={formData.student_email}
               onChange={handleChange}
-              className={`w-full p-2 border rounded ${
-                errors.student_email ? "border-red-500" : "border-blue-300"
-              }`}
+              className={`w-full p-2 border rounded ${errors.student_email ? "border-red-500" : "border-blue-300"
+                }`}
               required
             />
             {errors.student_email && (
@@ -362,9 +347,8 @@ function EnrollForm() {
               name="parent_email"
               value={formData.parent_email}
               onChange={handleChange}
-              className={`w-full p-2 border rounded ${
-                errors.parent_email ? "border-red-500" : "border-blue-300"
-              }`}
+              className={`w-full p-2 border rounded ${errors.parent_email ? "border-red-500" : "border-blue-300"
+                }`}
               required
             />
             {errors.parent_email && (
@@ -382,9 +366,8 @@ function EnrollForm() {
               name="contact_number"
               value={formData.contact_number}
               onChange={handleChange}
-              className={`w-full p-2 border rounded ${
-                errors.contact_number ? "border-red-500" : "border-blue-300"
-              }`}
+              className={`w-full p-2 border rounded ${errors.contact_number ? "border-red-500" : "border-blue-300"
+                }`}
               required
             />
             {errors.contact_number && (
@@ -404,9 +387,8 @@ function EnrollForm() {
               name="alt_contact_number"
               value={formData.alt_contact_number}
               onChange={handleChange}
-              className={`w-full p-2 border rounded ${
-                errors.alt_contact_number ? "border-red-500" : "border-blue-300"
-              }`}
+              className={`w-full p-2 border rounded ${errors.alt_contact_number ? "border-red-500" : "border-blue-300"
+                }`}
               required
             />
             {errors.alt_contact_number && (
@@ -415,7 +397,23 @@ function EnrollForm() {
               </p>
             )}
           </div>
-
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Course_ID
+            </label>
+            <input
+              type="text"
+              name="course_id"
+              value={formData.course_name}
+              onChange={handleChange}
+              className={`w-full p-2 border rounded ${errors.course_id ? "border-red-500" : "border-blue-300"
+                }`}
+              required
+            />
+            {errors.course_id && (
+              <p className="text-red-500 text-xs mt-1">{errors.course_id}</p>
+            )}
+          </div>
           {/* Address */}
           <div className="col-span-1 md:col-span-2">
             <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -425,9 +423,8 @@ function EnrollForm() {
               name="address"
               value={formData.address}
               onChange={handleChange}
-              className={`w-full p-2 border rounded ${
-                errors.address ? "border-red-500" : "border-blue-300"
-              }`}
+              className={`w-full p-2 border rounded ${errors.address ? "border-red-500" : "border-blue-300"
+                }`}
               required
             />
             {errors.address && (
@@ -445,9 +442,8 @@ function EnrollForm() {
               name="pincode"
               value={formData.pincode}
               onChange={handleChange}
-              className={`w-full p-2 border rounded ${
-                errors.pincode ? "border-red-500" : "border-blue-300"
-              }`}
+              className={`w-full p-2 border rounded ${errors.pincode ? "border-red-500" : "border-blue-300"
+                }`}
               required
             />
             {errors.pincode && (
@@ -465,9 +461,8 @@ function EnrollForm() {
               name="dob"
               value={formData.dob}
               onChange={handleChange}
-              className={`w-full p-2 border rounded ${
-                errors.dob ? "border-red-500" : "border-blue-300"
-              }`}
+              className={`w-full p-2 border rounded ${errors.dob ? "border-red-500" : "border-blue-300"
+                }`}
               required
             />
             {errors.dob && (
@@ -484,9 +479,8 @@ function EnrollForm() {
               name="blood_group"
               value={formData.blood_group}
               onChange={handleChange}
-              className={`w-full p-2 border rounded ${
-                errors.blood_group ? "border-red-500" : "border-blue-300"
-              }`}
+              className={`w-full p-2 border rounded ${errors.blood_group ? "border-red-500" : "border-blue-300"
+                }`}
               required
             >
               <option value="">Select Blood Group</option>
@@ -510,9 +504,8 @@ function EnrollForm() {
               name="comorbidity"
               value={formData.comorbidity}
               onChange={handleChange}
-              className={`w-full p-2 border rounded ${
-                errors.comorbidity ? "border-red-500" : "border-blue-300"
-              }`}
+              className={`w-full p-2 border rounded ${errors.comorbidity ? "border-red-500" : "border-blue-300"
+                }`}
               required
             >
               <option value="">Select</option>
@@ -533,9 +526,8 @@ function EnrollForm() {
               name="udid"
               value={formData.udid}
               onChange={handleChange}
-              className={`w-full p-2 border rounded ${
-                errors.udid ? "border-red-500" : "border-blue-300"
-              }`}
+              className={`w-full p-2 border rounded ${errors.udid ? "border-red-500" : "border-blue-300"
+                }`}
               required
             >
               <option value="">Select</option>
@@ -557,9 +549,8 @@ function EnrollForm() {
               name="diagnosis"
               value={formData.diagnosis}
               onChange={handleChange}
-              className={`w-full p-2 border rounded ${
-                errors.diagnosis ? "border-red-500" : "border-blue-300"
-              }`}
+              className={`w-full p-2 border rounded ${errors.diagnosis ? "border-red-500" : "border-blue-300"
+                }`}
               required
             />
             {errors.diagnosis && (
@@ -642,11 +633,10 @@ function EnrollForm() {
             <button
               type="submit"
               disabled={isSubmitting}
-              className={`px-6 py-2 rounded ${
-                isSubmitting
+              className={`px-6 py-2 rounded ${isSubmitting
                   ? "bg-blue-300 cursor-not-allowed"
                   : "bg-blue-500 hover:bg-blue-600 text-white"
-              }`}
+                }`}
             >
               {isSubmitting ? "Submitting..." : "Submit"}
             </button>
@@ -655,11 +645,10 @@ function EnrollForm() {
           {/* Submission Message */}
           {submissionMessage && (
             <div
-              className={`col-span-1 md:col-span-2 text-center p-3 rounded-lg ${
-                submissionMessage.includes("Successfully")
+              className={`col-span-1 md:col-span-2 text-center p-3 rounded-lg ${submissionMessage.includes("Successfully")
                   ? "bg-blue-100 text-blue-800"
                   : "bg-red-100 text-red-800"
-              }`}
+                }`}
             >
               {submissionMessage}
             </div>

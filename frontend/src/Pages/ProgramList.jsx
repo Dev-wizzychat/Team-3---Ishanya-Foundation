@@ -1,504 +1,357 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
-import { Search, Filter, User, Home, Edit, ArrowLeft } from 'lucide-react';
+import { Search, Filter, User, Home, Edit, ArrowLeft, Plus, ChevronDown } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
-// Mock data for demonstration
-
-
-const ProgramList = () => {
-  // const [programs, setPrograms] = useState([]); // State to store programs
-  // const [filteredPrograms, setFilteredPrograms] = useState([]); // State for filtered programs
-  // const [searchTerm, setSearchTerm] = useState(''); // State for search input
-
-  const [programs, setPrograms] = useState([]);
-  // const [programs, setPrograms] = useState(mockPrograms);
-  const [filteredPrograms, setFilteredPrograms] = useState([]);
+const SessionList = () => {
+  const navigate = useNavigate();
+  const [sessions, setSessions] = useState([]);
+  const [filteredSessions, setFilteredSessions] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedProgram, setSelectedProgram] = useState(null);
-  const [selectedCourse, setSelectedCourse] = useState(null);
+  const [searchType, setSearchType] = useState('program');
+  const [isSearchDropdownOpen, setIsSearchDropdownOpen] = useState(false);
+  const [selectedSession, setSelectedSession] = useState(null);
+  const [isAddingSession, setIsAddingSession] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
+  const [selectedDays, setSelectedDays] = useState([]);
   const [filters, setFilters] = useState({
     program: '',
-    course: '',
-    teacher: ''
+    educator: '',
   });
-  const [showAddProgramForm, setShowAddProgramForm] = useState(false);
-  const [errorMessage, setErrorMessage] = useState(''); // State to store error messages
 
-  // Colors for pie chart
-  const COLORS = ['#0088FE', '#FF8042'];
+  const sampleSessions = [
+    {
+      session_id: "SES001",
+      days: ["Monday", "Wednesday", "Friday"],
+      time: "10:00",
+      duration: 90,
+      program: "CS101",
+      educator_id: "EDU1"
+    },
+    {
+      session_id: "SES002",
+      days: ["Tuesday", "Thursday"],
+      time: "14:00",
+      duration: 120,
+      program: "DS201",
+      educator_id: "EDU3"
+    },
+    {
+      session_id: "SES003",
+      days: ["Saturday"],
+      time: "11:00",
+      duration: 60,
+      program: "WD301",
+      educator_id: "EDU4"
+    }
+  ];
+
   useEffect(() => {
-    const fetchPrograms = async () => {
+    const fetchSessions = async () => {
       try {
-        const API = import.meta.env.VITE_API_BASE_URL; // Replace with your API base URL
-        const response = await axios.get(`http://localhost:8000/all-programs`); // Replace with your backend endpoint
-        setPrograms(response.data); // Assuming the API returns an array of programs
-        setFilteredPrograms(response.data); // Initialize filtered programs
+        const response = await axios.get(`http://localhost:8000/all-sessions`);
+        console.log("API Response:", response.data); // Debugging
+        setSessions(response.data);
+        setFilteredSessions(response.data);
       } catch (error) {
-        console.error('Error fetching programs:', error);
+        console.error('Error fetching sessions:', error);
+        setSessions(sampleSessions); // Use sample data if API fails
+        setFilteredSessions(sampleSessions);
       }
     };
-
-    fetchPrograms();
+    fetchSessions();
   }, []);
   useEffect(() => {
-
-    let results = programs;
+    let results = sessions;
 
     // Apply search
     if (searchTerm) {
-      results = results.filter(program =>
-        program.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        program.courses.some(course =>
-          course.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          course.teacher.toLowerCase().includes(searchTerm.toLowerCase())
-        )
-      );
+      const searchTermLower = searchTerm.toLowerCase();
+      results = results.filter(session => {
+        if (searchType === 'program') {
+          return session.program.toLowerCase().includes(searchTermLower);
+        } else if (searchType === 'educatorId') {
+          return session.educator_id.toLowerCase().includes(searchTermLower);
+        }
+        return false;
+      });
     }
 
     // Apply filters
     if (filters.program) {
-      results = results.filter(program =>
-        program.name.toLowerCase().includes(filters.program.toLowerCase())
+      results = results.filter(session =>
+        session.program.toLowerCase().includes(filters.program.toLowerCase())
       );
     }
 
-    if (filters.course) {
-      results = results.filter(program =>
-        program.courses.some(course =>
-          course.name.toLowerCase().includes(filters.course.toLowerCase())
-        )
+    if (filters.educator) {
+      results = results.filter(session =>
+        session.educator_id.toLowerCase().includes(filters.educator.toLowerCase())
       );
     }
 
-    if (filters.teacher) {
-      results = results.filter(program =>
-        program.courses.some(course =>
-          course.teacher.toLowerCase().includes(filters.teacher.toLowerCase())
-        )
-      );
-    }
+    setFilteredSessions(results);
+  }, [searchTerm, searchType, filters, sessions]);
 
-    setFilteredPrograms(results);
-  }, [searchTerm, filters, programs]);
-
+  // Update selectedDays when a session is selected
   useEffect(() => {
-    // Fetch all courses from the backend
-    const fetchCourses = async () => {
-      try {
-        const response = await axios.get('http://localhost:8000/all-courses/');
-        setPrograms(response.data); // Assuming the API returns programs with courses
-      } catch (error) {
-        console.error('Error fetching courses:', error);
-      }
-    };
+    if (selectedSession) {
+      setSelectedDays(selectedSession.days);
+    }
+  }, [selectedSession]);
 
-    fetchCourses();
-  }, []);
-
-  const handleProgramClick = (program) => {
-    setSelectedProgram(program);
-    setSelectedCourse(null);
+  const handleSearch = () => {
+    // Trigger search (currently redundant due to useEffect, but can be expanded)
   };
 
-  const handleCourseClick = (course) => {
-    setSelectedCourse(course);
+  const handleSessionClick = (session) => {
+    setSelectedSession(session);
     setIsEditing(false);
   };
 
-  const handleBackToPrograms = () => {
-    setSelectedProgram(null);
-    setSelectedCourse(null);
-  };
-
-  const handleBackToCourses = () => {
-    setSelectedCourse(null);
+  const handleBackToSessions = () => {
+    setSelectedSession(null);
   };
 
   const handleEditToggle = () => {
     setIsEditing(!isEditing);
   };
 
-  const handleEditSave = (e) => {
+
+  const handleAddSession = async (e) => {
     e.preventDefault();
 
-    // Here you would typically save changes to the backend
-    // For this example, we'll just update the local state
-
-    const updatedCourse = {
-      ...selectedCourse,
-      name: e.target.courseName.value,
-      teacher: e.target.teacherName.value,
-      progress: parseInt(e.target.progress.value),
-      totalStudents: parseInt(e.target.totalStudents.value),
-      attendingStudents: parseInt(e.target.attendingStudents.value)
-    };
-
-    const updatedProgram = {
-      ...selectedProgram,
-      courses: selectedProgram.courses.map(course =>
-        course.id === selectedCourse.id ? updatedCourse : course
-      )
-    };
-
-    setPrograms(programs.map(program =>
-      program.id === selectedProgram.id ? updatedProgram : program
-    ));
-
-    setSelectedProgram(updatedProgram);
-    setSelectedCourse(updatedCourse);
-    setIsEditing(false);
-  };
-
-  const handleSearchChange = (e) => {
-    setSearchTerm(e.target.value);
-  };
-
-  const handleFilterChange = (e) => {
-    const { name, value } = e.target;
-    setFilters(prevFilters => ({
-      ...prevFilters,
-      [name]: value
-    }));
-  };
-
-  const handleAddProgram = async (e) => {
-    e.preventDefault();
-
-    const newProgram = {
-      name: e.target.programName.value,
-      description: e.target.programDescription.value,
-      duration: parseInt(e.target.programDuration.value),
-      educator_enrolled: e.target.educatorEnrolled.value.split(',').map((id) => id.trim()),
-      students_enrolled: e.target.studentsEnrolled.value.split(',').map((id) => id.trim()),
-      start_date: e.target.startDate.value,
-      courses: []
+    const newSession = {
+      session_id: e.target.sessionId.value, // Session ID
+      name: e.target.name.value, // Session Name
+      date_timing: e.target.dateTiming.value, // Date and Time
+      duration: parseInt(e.target.duration.value), // Duration in minutes
+      course_id: e.target.courseId.value, // Course ID
     };
 
     try {
-      await axios.post('http://127.0.0.1:8000/add-course/', newProgram);
-      setPrograms([...programs, { id: Date.now(), ...newProgram }]); // Add locally for immediate UI update
-      setShowAddProgramForm(false);
-      setErrorMessage(''); // Clear any previous error messages
+      const response = await axios.post(`http://localhost:8000/add-session/`, newSession);
+
+      // Add the new session to the list
+      const updatedSessions = [...sessions, response.data];
+      setSessions(updatedSessions);
+      setFilteredSessions(updatedSessions);
+
+      // Reset add session state
+      setIsAddingSession(false);
     } catch (error) {
-      console.error('Error adding program:', error);
-      setErrorMessage('Failed to add program. Please try again later.');
+      console.error('Error adding session:', error);
     }
   };
-
-  const handleUpdateCourse = async (e) => {
+  const handleUpdateSession = async (e) => {
     e.preventDefault();
 
-    const updatedCourse = {
-      name: e.target.courseName.value,
-      teacher: e.target.teacherName.value,
-      description: e.target.courseDescription.value,
-      progress: parseInt(e.target.progress.value),
-      totalStudents: parseInt(e.target.totalStudents.value),
-      attendingStudents: parseInt(e.target.attendingStudents.value)
+    const updatedSession = {
+      days: selectedDays,
+      time: e.target.time.value,
+      duration: parseInt(e.target.duration.value),
+      program: e.target.program.value,
+      educator_id: e.target.educatorId.value
     };
-
     try {
-      await axios.put(`http://127.0.0.1:8000/update-course/${selectedCourse.id}/`, updatedCourse);
-      const updatedProgram = {
-        ...selectedProgram,
-        courses: selectedProgram.courses.map(course =>
-          course.id === selectedCourse.id ? { ...selectedCourse, ...updatedCourse } : course
-        )
-      };
+      await axios.put(`http://127.0.0.1:8000/update-session/${selectedSession.session_id}/`, updatedSession);
 
-      setPrograms(programs.map(program =>
-        program.id === selectedProgram.id ? updatedProgram : program
+      setSessions(sessions.map(session =>
+        session.session_id === selectedSession.session_id
+          ? { ...selectedSession, ...updatedSession }
+          : session
       ));
-      setSelectedProgram(updatedProgram);
-      setSelectedCourse({ ...selectedCourse, ...updatedCourse });
+
+      setSelectedSession({ ...selectedSession, ...updatedSession });
       setIsEditing(false);
     } catch (error) {
-      console.error('Error updating course:', error);
+      console.error('Error updating session:', error);
     }
   };
 
-  const handleDeleteCourse = async (courseId) => {
+  const handleDeleteSession = async () => {
     try {
-      await axios.delete(`http://127.0.0.1:8000/delete-course/${courseId}/`);
-      const updatedProgram = {
-        ...selectedProgram,
-        courses: selectedProgram.courses.filter(course => course.id !== courseId)
-      };
+      await axios.delete(`http://127.0.0.1:8000/delete-session/${selectedSession.session_id}/`);
 
-      setPrograms(programs.map(program =>
-        program.id === selectedProgram.id ? updatedProgram : program
-      ));
-      setSelectedProgram(updatedProgram);
-      setSelectedCourse(null);
+      setSessions(sessions.filter(session => session.session_id !== selectedSession.session_id));
+      setSelectedSession(null);
     } catch (error) {
-      console.error('Error deleting course:', error);
+      console.error('Error deleting session:', error);
     }
   };
 
-  const renderProgramList = () => (
+  const DaysCheckboxGroup = ({ selectedDays, onDaysChange, name = "days" }) => {
+    const daysOfWeek = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+
+    const handleCheckboxChange = (day) => {
+      const newSelectedDays = selectedDays.includes(day)
+        ? selectedDays.filter(d => d !== day)
+        : [...selectedDays, day];
+      onDaysChange(newSelectedDays);
+    };
+
+    return (
+      <div className="grid grid-cols-3 gap-2">
+        {daysOfWeek.map(day => (
+          <label key={day} className="inline-flex items-center">
+            <input
+              type="checkbox"
+              name={name}
+              value={day}
+              checked={selectedDays.includes(day)}
+              onChange={() => handleCheckboxChange(day)}
+              className="form-checkbox h-4 w-4 text-indigo-600 transition duration-150 ease-in-out"
+            />
+            <span className="ml-2 text-sm text-gray-700">{day}</span>
+          </label>
+        ))}
+      </div>
+    );
+  };
+
+  const renderAddSessionForm = () => {
+    return (
+      <div className="w-full h-full bg-gray-50">
+        <header className="bg-white shadow">
+          <div className="max-w-7xl mx-auto px-4 py-4 sm:px-6 lg:px-8 flex justify-between items-center">
+            <div className="flex items-center">
+              <button
+                onClick={() => setIsAddingSession(false)}
+                className="mr-4 p-2 text-gray-600 hover:text-gray-900 focus:outline-none"
+              >
+                <ArrowLeft className="h-5 w-5" />
+              </button>
+              <h1 className="text-2xl font-bold text-gray-900">Add New Session</h1>
+            </div>
+          </div>
+        </header>
+
+        <main className="max-w-7xl mx-auto px-4 py-6 sm:px-6 lg:px-8">
+          <div className="bg-white shadow overflow-hidden sm:rounded-lg mb-6">
+            <div className="px-4 py-5 sm:px-6">
+              <h3 className="text-lg leading-6 font-medium text-gray-900">Session Details</h3>
+            </div>
+            <div className="border-t border-gray-200 px-4 py-5 sm:px-6">
+              <form onSubmit={handleAddSession}>
+                <div className="grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6">
+                  {/* Session ID */}
+                  <div className="sm:col-span-3">
+                    <label htmlFor="sessionId" className="block text-sm font-medium text-gray-700">
+                      Session ID
+                    </label>
+                    <div className="mt-1">
+                      <input
+                        type="text"
+                        name="sessionId"
+                        id="sessionId"
+                        required
+                        className="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md h-9"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Session Name */}
+                  <div className="sm:col-span-3">
+                    <label htmlFor="name" className="block text-sm font-medium text-gray-700">
+                      Session Name
+                    </label>
+                    <div className="mt-1">
+                      <input
+                        type="text"
+                        name="name"
+                        id="name"
+                        required
+                        className="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md h-9"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Date and Time */}
+                  <div className="sm:col-span-3">
+                    <label htmlFor="dateTiming" className="block text-sm font-medium text-gray-700">
+                      Date and Time
+                    </label>
+                    <div className="mt-1">
+                      <input
+                        type="datetime-local"
+                        name="dateTiming"
+                        id="dateTiming"
+                        required
+                        className="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md h-9"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Duration */}
+                  <div className="sm:col-span-2">
+                    <label htmlFor="duration" className="block text-sm font-medium text-gray-700">
+                      Duration (minutes)
+                    </label>
+                    <div className="mt-1">
+                      <input
+                        type="number"
+                        name="duration"
+                        id="duration"
+                        required
+                        className="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md h-9"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Course ID */}
+                  <div className="sm:col-span-3">
+                    <label htmlFor="courseId" className="block text-sm font-medium text-gray-700">
+                      Course ID
+                    </label>
+                    <div className="mt-1">
+                      <input
+                        type="text"
+                        name="courseId"
+                        id="courseId"
+                        required
+                        className="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md h-9"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="mt-6 flex justify-end">
+                  <button
+                    type="button"
+                    onClick={() => setIsAddingSession(false)}
+                    className="bg-white py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="ml-3 inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                  >
+                    Add Session
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </main>
+      </div>
+    );
+  };
+
+  const renderSessionList = () => (
     <div className="w-full h-full bg-gray-50">
       <header className="bg-white shadow">
         <div className="max-w-7xl mx-auto px-4 py-4 sm:px-6 lg:px-8 flex justify-between items-center">
-          <h1 className="text-2xl font-bold text-gray-900">Program Management</h1>
+          <h1 className="text-2xl font-bold text-gray-900">Session Management</h1>
           <div className="flex space-x-4">
-            <button className="p-2 text-gray-600 hover:text-gray-900 focus:outline-none">
-              <Home className="h-6 w-6" />
-            </button>
-            <button className="p-2 text-gray-600 hover:text-gray-900 focus:outline-none">
-              <User className="h-6 w-6" />
-            </button>
-          </div>
-        </div>
-      </header>
-
-      <main className="max-w-7xl mx-auto px-4 py-6 sm:px-6 lg:px-8">
-        {/* <div className="mb-8">
-          {errorMessage && (
-            <div className="mb-4 p-4 text-sm text-red-700 bg-red-100 rounded-lg">
-              {errorMessage}
-            </div>
-          )}
-          <div className="flex justify-end mb-4">
             <button
-              onClick={() => setShowAddProgramForm(true)}
+              onClick={() => setIsAddingSession(true)}
               className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
             >
-              Add Program
+              <Plus className="h-4 w-4 mr-2" />
+              Add Session
             </button>
-          </div>
-
-          {showAddProgramForm && (
-            <form onSubmit={handleAddProgram} className="bg-white shadow rounded-md p-4 mb-6">
-              <div className="grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6">
-                <div className="sm:col-span-6">
-                  <label htmlFor="programName" className="block text-sm font-medium text-gray-700">
-                    Program Name
-                  </label>
-                  <input
-                    type="text"
-                    name="programName"
-                    id="programName"
-                    required
-                    className="mt-1 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md"
-                  />
-                </div>
-
-                <div className="sm:col-span-6">
-                  <label htmlFor="programDescription" className="block text-sm font-medium text-gray-700">
-                    Description
-                  </label>
-                  <textarea
-                    name="programDescription"
-                    id="programDescription"
-                    rows="3"
-                    required
-                    className="mt-1 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md"
-                  ></textarea>
-                </div>
-
-                <div className="sm:col-span-2">
-                  <label htmlFor="programDuration" className="block text-sm font-medium text-gray-700">
-                    Duration (in hours)
-                  </label>
-                  <input
-                    type="number"
-                    name="programDuration"
-                    id="programDuration"
-                    required
-                    className="mt-1 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md"
-                  />
-                </div>
-
-                <div className="sm:col-span-2">
-                  <label htmlFor="educatorEnrolled" className="block text-sm font-medium text-gray-700">
-                    Educator IDs (comma-separated)
-                  </label>
-                  <input
-                    type="text"
-                    name="educatorEnrolled"
-                    id="educatorEnrolled"
-                    className="mt-1 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md"
-                  />
-                </div>
-
-                <div className="sm:col-span-2">
-                  <label htmlFor="studentsEnrolled" className="block text-sm font-medium text-gray-700">
-                    Student IDs (comma-separated)
-                  </label>
-                  <input
-                    type="text"
-                    name="studentsEnrolled"
-                    id="studentsEnrolled"
-                    className="mt-1 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md"
-                  />
-                </div>
-
-                <div className="sm:col-span-2">
-                  <label htmlFor="startDate" className="block text-sm font-medium text-gray-700">
-                    Start Date
-                  </label>
-                  <input
-                    type="date"
-                    name="startDate"
-                    id="startDate"
-                    required
-                    className="mt-1 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md"
-                  />
-                </div>
-              </div>
-
-              <div className="mt-6 flex justify-end">
-                <button
-                  type="button"
-                  onClick={() => setShowAddProgramForm(false)}
-                  className="bg-white py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="ml-3 inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-                >
-                  Save
-                </button>
-              </div>
-            </form>
-          )}
-
-          <div className="max-w-3xl mx-auto flex flex-col md:flex-row space-y-4 md:space-y-0 md:space-x-4">
-            <div className="flex-1 relative">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <Search className="h-5 w-5 text-gray-400" />
-              </div>
-              <input
-                type="text"
-                value={searchTerm}
-                onChange={handleSearchChange}
-                placeholder="Search programs, courses, or teachers..."
-                className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-              />
-            </div>
-
-            <div className="flex space-x-2">
-              <div className="relative">
-                <select
-                  name="program"
-                  value={filters.program}
-                  onChange={handleFilterChange}
-                  className="block w-full pl-3 pr-10 py-2 border border-gray-300 rounded-md leading-5 bg-white focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                >
-                  <option value="">All Programs</option>
-                  {programs.map(program => (
-                    <option key={program.id} value={program.name}>{program.name}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="relative">
-                <select
-                  name="course"
-                  value={filters.course}
-                  onChange={handleFilterChange}
-                  className="block w-full pl-3 pr-10 py-2 border border-gray-300 rounded-md leading-5 bg-white focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                >
-                  <option value="">All Courses</option>
-                  {programs && programs.flatMap(program =>
-                    program.courses.map(course => (
-                      <option key={course.id} value={course.name}>{course.name}</option>
-                    ))
-                  )}
-                </select>
-              </div>
-
-              <div className="relative">
-                <select
-                  name="teacher"
-                  value={filters.teacher}
-                  onChange={handleFilterChange}
-                  className="block w-full pl-3 pr-10 py-2 border border-gray-300 rounded-md leading-5 bg-white focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                >
-                  <option value="">All Teachers</option>
-                  {Array.from(new Set(programs.flatMap(program =>
-                    program.courses.map(course => course.teacher)
-                  ))).map(teacher => (
-                    <option key={teacher} value={teacher}>{teacher}</option>
-                  ))}
-                </select>
-              </div>
-
-              <button className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
-                <Filter className="h-4 w-4 mr-2" />
-                Filter
-              </button>
-            </div>
-          </div>
-        </div> */}
-
-        <div className="bg-white shadow overflow-hidden sm:rounded-md">
-          <ul className="divide-y divide-gray-200">
-            {console.log("hello", filteredPrograms)}
-            {filteredPrograms.length > 0 ? (
-              filteredPrograms.map((program) => (
-                <li key={program.id}>
-                  <button
-                    onClick={() => handleProgramClick(program)}
-                    className="block hover:bg-gray-50 w-full text-left"
-                  >
-                    <div className="px-4 py-4 sm:px-6">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center">
-                          <p className="text-lg font-medium text-indigo-600 truncate">
-                            {program.name}
-                          </p>
-                        </div>
-                        <div className="ml-2 flex-shrink-0 flex">
-                          <p className="px-2 inline-flex text-sm leading-5 font-semibold rounded-full bg-green-100 text-green-800">
-                            {program.start_date} Start Date
-                          </p>
-                        </div>
-                      </div>
-                      <div className="mt-2 sm:flex sm:justify-between">
-                        <div className="sm:flex">
-                          <p className="flex items-center text-sm text-gray-500">
-                            {program.description}
-                          </p>
-                        </div>
-                        <div className="mt-2 flex items-center text-sm text-gray-500 sm:mt-0">
-                          <p>Duration: {program.duration}</p>
-                        </div>
-                      </div>
-                    </div>
-                  </button>
-                </li>
-              ))
-            ) : (
-              <li className="px-4 py-6 text-center text-gray-500">
-                No programs found. Try adjusting your search or filters.
-              </li>
-            )}
-          </ul>
-        </div>
-      </main>
-    </div>
-  );
-
-  const renderProgramDetail = () => (
-    <div className="w-full h-full bg-gray-50">
-      <header className="bg-white shadow">
-        <div className="max-w-7xl mx-auto px-4 py-4 sm:px-6 lg:px-8 flex justify-between items-center">
-          <div className="flex items-center">
-            <button
-              onClick={handleBackToPrograms}
-              className="mr-4 p-2 text-gray-600 hover:text-gray-900 focus:outline-none"
-            >
-              <ArrowLeft className="h-5 w-5" />
-            </button>
-            <h1 className="text-2xl font-bold text-gray-900">{selectedProgram.name}</h1>
-          </div>
-          <div className="flex space-x-4">
-            <button className="p-2 text-gray-600 hover:text-gray-900 focus:outline-none">
+            <button onClick={() => navigate('/')} className="p-2 text-gray-600 hover:text-gray-900 focus:outline-none">
               <Home className="h-6 w-6" />
             </button>
             <button className="p-2 text-gray-600 hover:text-gray-900 focus:outline-none">
@@ -509,65 +362,99 @@ const ProgramList = () => {
       </header>
 
       <main className="max-w-7xl mx-auto px-4 py-6 sm:px-6 lg:px-8">
-        <div className="bg-white shadow overflow-hidden sm:rounded-lg mb-6">
-          <div className="px-4 py-5 sm:px-6">
-            <h3 className="text-lg leading-6 font-medium text-gray-900">Program Details</h3>
-            <p className="mt-1 max-w-2xl text-sm text-gray-500">{selectedProgram.description}</p>
-          </div>
-          <div className="border-t border-gray-200 px-4 py-5 sm:px-6">
-            <dl className="grid grid-cols-1 gap-x-4 gap-y-8 sm:grid-cols-2">
-              <div className="sm:col-span-1">
-                <dt className="text-sm font-medium text-gray-500">Duration</dt>
-                <dd className="mt-1 text-sm text-gray-900">{selectedProgram.duration}</dd>
-              </div>
-              <div className="sm:col-span-1">
-                <dt className="text-sm font-medium text-gray-500">Total Courses</dt>
-                <dd className="mt-1 text-sm text-gray-900">{selectedProgram.courses.length}</dd>
-              </div>
-              <div className="sm:col-span-2">
-                <dt className="text-sm font-medium text-gray-500">Total Students</dt>
-                <dd className="mt-1 text-sm text-gray-900">
-                  {selectedProgram.courses.reduce((sum, course) => sum + course.totalStudents, 0)}
-                </dd>
-              </div>
-            </dl>
-          </div>
-        </div>
+        {/* Search input with dropdown */}
+        <div className="mb-4 flex items-center space-x-2">
+          {/* Search Type Dropdown */}
+          {/* Search Type Dropdown */}
+          <div className="relative">
+            <button
+              onClick={() => setIsSearchDropdownOpen(!isSearchDropdownOpen)}
+              className="inline-flex justify-center w-full px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+            >
+              {searchType === 'sessionId' ? 'Session ID' : 'Session Name'}
+              <ChevronDown className="ml-2 -mr-1 h-5 w-5" />
+            </button>
 
-        <h2 className="text-xl font-semibold text-gray-800 mb-4">Courses</h2>
+            {isSearchDropdownOpen && (
+              <div className="absolute z-10 mt-1 w-full bg-white shadow-lg rounded-md">
+                <ul className="py-1">
+                  <li
+                    onClick={() => {
+                      setSearchType('Session ID');
+                      setIsSearchDropdownOpen(false);
+                    }}
+                    className="px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer"
+                  >
+                    Session ID
+                  </li>
+                  <li
+                    onClick={() => {
+                      setSearchType('Session Name');
+                      setIsSearchDropdownOpen(false);
+                    }}
+                    className="px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer"
+                  >
+                    Session Name
+                  </li>
+                </ul>
+              </div>
+            )}
+          </div>
+
+          {/* Search Input */}
+          <div className="relative flex-grow">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <Search className="h-5 w-5 text-gray-400" />
+            </div>
+            <input
+              type="text"
+              placeholder={`Search by ${searchType === 'program' ? 'Program' : 'Educator ID'}`}
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+            />
+          </div>
+
+          {/* Search Button */}
+          <button
+            onClick={handleSearch}
+            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+          >
+            Search
+          </button>
+        </div>
         <div className="bg-white shadow overflow-hidden sm:rounded-md">
           <ul className="divide-y divide-gray-200">
-            {selectedProgram.courses.map((course) => (
-              <li key={course.id}>
-                <button
-                  onClick={() => handleCourseClick(course)}
-                  className="block hover:bg-gray-50 w-full text-left"
-                >
+            {filteredSessions.map((session) => (
+              <li key={session.session_id}>
+                
                   <div className="px-4 py-4 sm:px-6">
+                    {/* Session ID Title */}
                     <div className="flex items-center justify-between">
-                      <div className="flex items-center">
-                        <p className="text-lg font-medium text-indigo-600 truncate">
-                          {course.name}
-                        </p>
-                      </div>
-                      <div className="ml-2 flex-shrink-0 flex">
-                        <p className="px-2 inline-flex text-sm leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
-                          Progress: {course.progress}%
-                        </p>
-                      </div>
+                      <h3 className="text-lg font-semibold text-gray-900">
+                        Session ID: {session.session_id}
+                      </h3>
                     </div>
+
+                    {/* Session Details */}
                     <div className="mt-2 sm:flex sm:justify-between">
-                      <div className="sm:flex">
-                        <p className="flex items-center text-sm text-gray-500">
-                          Instructor: {course.teacher}
+                      <div className="mt-2 flex flex-col text-sm text-gray-500 sm:mt-0">
+                        <p>
+                          <span className="font-medium text-gray-700">Session Name:</span> {session.name}
                         </p>
-                      </div>
-                      <div className="mt-2 flex items-center text-sm text-gray-500 sm:mt-0">
-                        <p>Students: {course.attendingStudents}/{course.totalStudents}</p>
+                        <p>
+                          <span className="font-medium text-gray-700">Course ID:</span> {session.course_id}
+                        </p>
+                        <p>
+                          <span className="font-medium text-gray-700">Timing:</span> {session.date_timing}
+                        </p>
+                        <p>
+                          <span className="font-medium text-gray-700">Duration:</span> {session.duration} mins
+                        </p>
                       </div>
                     </div>
                   </div>
-                </button>
+                
               </li>
             ))}
           </ul>
@@ -576,24 +463,19 @@ const ProgramList = () => {
     </div>
   );
 
-  const renderCourseDetail = () => {
-    const attendanceData = [
-      { name: 'Attending', value: selectedCourse.attendingStudents },
-      { name: 'Absent', value: selectedCourse.totalStudents - selectedCourse.attendingStudents }
-    ];
-
+  const renderSessionDetail = () => {
     return (
       <div className="w-full h-full bg-gray-50">
         <header className="bg-white shadow">
           <div className="max-w-7xl mx-auto px-4 py-4 sm:px-6 lg:px-8 flex justify-between items-center">
             <div className="flex items-center">
               <button
-                onClick={handleBackToCourses}
+                onClick={handleBackToSessions}
                 className="mr-4 p-2 text-gray-600 hover:text-gray-900 focus:outline-none"
               >
                 <ArrowLeft className="h-5 w-5" />
               </button>
-              <h1 className="text-2xl font-bold text-gray-900">{selectedCourse.name}</h1>
+              <h1 className="text-2xl font-bold text-gray-900">Session {selectedSession.session_id}</h1>
             </div>
             <div className="flex space-x-4">
               <button
@@ -613,107 +495,96 @@ const ProgramList = () => {
           </div>
         </header>
 
+
         <main className="max-w-7xl mx-auto px-4 py-6 sm:px-6 lg:px-8">
           {isEditing ? (
             <div className="bg-white shadow overflow-hidden sm:rounded-lg mb-6">
               <div className="px-4 py-5 sm:px-6">
-                <h3 className="text-lg leading-6 font-medium text-gray-900">Edit Course Details</h3>
+                <h3 className="text-lg leading-6 font-medium text-gray-900">Edit Session Details</h3>
               </div>
               <div className="border-t border-gray-200 px-4 py-5 sm:px-6">
-                <form onSubmit={handleUpdateCourse}>
+                <form onSubmit={handleUpdateSession}>
                   <div className="grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6">
-                    <div className="sm:col-span-3">
-                      <label htmlFor="courseName" className="block text-sm font-medium text-gray-700">
-                        Course Name
-                      </label>
-                      <div className="mt-1">
-                        <input
-                          type="text"
-                          name="courseName"
-                          id="courseName"
-                          defaultValue={selectedCourse.name}
-                          className="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="sm:col-span-3">
-                      <label htmlFor="teacherName" className="block text-sm font-medium text-gray-700">
-                        Teacher Name
-                      </label>
-                      <div className="mt-1">
-                        <input
-                          type="text"
-                          name="teacherName"
-                          id="teacherName"
-                          defaultValue={selectedCourse.teacher}
-                          className="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md"
-                        />
-                      </div>
-                    </div>
-
                     <div className="sm:col-span-6">
-                      <label htmlFor="courseDescription" className="block text-sm font-medium text-gray-700">
-                        Description
+                      <label htmlFor="days" className="block text-sm font-medium text-gray-700 mb-2">
+                        Days of Week
                       </label>
-                      <div className="mt-1">
-                        <textarea
-                          name="courseDescription"
-                          id="courseDescription"
-                          defaultValue={selectedCourse.description}
-                          rows="3"
-                          className="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md"
-                        ></textarea>
-                      </div>
+                      <DaysCheckboxGroup
+                        selectedDays={selectedDays}
+                        onDaysChange={setSelectedDays}
+                      />
+                      <input
+                        type="hidden"
+                        name="days"
+                        value={JSON.stringify(selectedDays)}
+                      />
                     </div>
 
-                    <div className="sm:col-span-2">
-                      <label htmlFor="totalStudents" className="block text-sm font-medium text-gray-700">
-                        Total Students
+                    <div className="sm:col-span-3">
+                      <label htmlFor="time" className="block text-sm font-medium text-gray-700">
+                        Time
                       </label>
                       <div className="mt-1">
                         <input
-                          type="number"
-                          name="totalStudents"
-                          id="totalStudents"
-                          defaultValue={selectedCourse.totalStudents}
-                          className="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md"
+                          type="time"
+                          name="time"
+                          id="time"
+                          defaultValue={selectedSession.time}
+                          required
+                          className="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md h-9"
                         />
                       </div>
                     </div>
 
                     <div className="sm:col-span-2">
-                      <label htmlFor="attendingStudents" className="block text-sm font-medium text-gray-700">
-                        Attending Students
+                      <label htmlFor="duration" className="block text-sm font-medium text-gray-700">
+                        Duration (minutes)
                       </label>
                       <div className="mt-1">
                         <input
                           type="number"
-                          name="attendingStudents"
-                          id="attendingStudents"
-                          defaultValue={selectedCourse.attendingStudents}
-                          className="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md"
+                          name="duration"
+                          id="duration"
+                          defaultValue={selectedSession.duration}
+                          required
+                          className="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md h-9"
                         />
                       </div>
                     </div>
 
                     <div className="sm:col-span-2">
-                      <label htmlFor="progress" className="block text-sm font-medium text-gray-700">
-                        Progress (%)
+                      <label htmlFor="program" className="block text-sm font-medium text-gray-700">
+                        Program
                       </label>
                       <div className="mt-1">
                         <input
-                          type="number"
-                          name="progress"
-                          id="progress"
-                          min="0"
-                          max="100"
-                          defaultValue={selectedCourse.progress}
-                          className="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md"
+                          type="text"
+                          name="program"
+                          id="program"
+                          defaultValue={selectedSession.program}
+                          required
+                          className="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md h-9"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="sm:col-span-2">
+                      <label htmlFor="educatorId" className="block text-sm font-medium text-gray-700">
+                        Educator ID
+                      </label>
+                      <div className="mt-1">
+                        <input
+                          type="text"
+                          name="educatorId"
+                          id="educatorId"
+                          defaultValue={selectedSession.educator_id}
+                          required
+                          className="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md h-9"
                         />
                       </div>
                     </div>
                   </div>
+
 
                   <div className="mt-6 flex justify-end">
                     <button
@@ -737,123 +608,48 @@ const ProgramList = () => {
             <>
               <div className="bg-white shadow overflow-hidden sm:rounded-lg mb-6">
                 <div className="px-4 py-5 sm:px-6">
-                  <h3 className="text-lg leading-6 font-medium text-gray-900">Course Details</h3>
-                  <p className="mt-1 max-w-2xl text-sm text-gray-500">
-                    Part of {selectedProgram.name} program
-                  </p>
+                  <h3 className="text-lg leading-6 font-medium text-gray-900">Session Details</h3>
                 </div>
                 <div className="border-t border-gray-200 px-4 py-5 sm:p-0">
                   <dl className="sm:divide-y sm:divide-gray-200">
                     <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                      <dt className="text-sm font-medium text-gray-500">Course name</dt>
-                      <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">{selectedCourse.name}</dd>
+                      <dt className="text-sm font-medium text-gray-500">Session ID</dt>
+                      <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">{selectedSession.session_id}</dd>
                     </div>
                     <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                      <dt className="text-sm font-medium text-gray-500">Teacher</dt>
-                      <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">{selectedCourse.teacher}</dd>
-                    </div>
-                    <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                      <dt className="text-sm font-medium text-gray-500">Total students</dt>
-                      <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">{selectedCourse.totalStudents}</dd>
-                    </div>
-                    <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                      <dt className="text-sm font-medium text-gray-500">Attending students</dt>
-                      <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">{selectedCourse.attendingStudents}</dd>
-                    </div>
-                    <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                      <dt className="text-sm font-medium text-gray-500">Course progress</dt>
+                      <dt className="text-sm font-medium text-gray-500">Days</dt>
                       <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
-                        <div className="relative pt-1">
-                          <div className="overflow-hidden h-2 text-xs flex rounded bg-indigo-200">
-                            <div
-                              style={{ width: `${selectedCourse.progress}%` }}
-                              className="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-indigo-500"
-                            ></div>
-                          </div>
-                        </div>
-                        {selectedCourse.progress}%
+                        {selectedSession.days.join(', ')}
                       </dd>
+                    </div>
+                    <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                      <dt className="text-sm font-medium text-gray-500">Time</dt>
+                      <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
+                        {selectedSession.time}
+                      </dd>
+                    </div>
+                    <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                      <dt className="text-sm font-medium text-gray-500">Duration</dt>
+                      <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">{selectedSession.duration} minutes</dd>
+                    </div>
+                    <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                      <dt className="text-sm font-medium text-gray-500">Program</dt>
+                      <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">{selectedSession.program}</dd>
+                    </div>
+                    <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                      <dt className="text-sm font-medium text-gray-500">Educator ID</dt>
+                      <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">{selectedSession.educator_id}</dd>
                     </div>
                   </dl>
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-                <div className="bg-white shadow overflow-hidden sm:rounded-lg">
-                  <div className="px-4 py-5 sm:px-6">
-                    <h3 className="text-lg leading-6 font-medium text-gray-900">Attendance Overview</h3>
-                  </div>
-                  <div className="border-t border-gray-200">
-                    <div className="h-64">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <PieChart>
-                          <Pie
-                            data={attendanceData}
-                            cx="50%"
-                            cy="50%"
-                            labelLine={false}
-                            outerRadius={80}
-                            fill="#8884d8"
-                            dataKey="value"
-                            label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                          >
-                            {attendanceData.map((entry, index) => (
-                              <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                            ))}
-                          </Pie>
-                          <Tooltip />
-                          <Legend />
-                        </PieChart>
-                      </ResponsiveContainer>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="bg-white shadow overflow-hidden sm:rounded-lg">
-                  <div className="px-4 py-5 sm:px-6">
-                    <h3 className="text-lg leading-6 font-medium text-gray-900">Student Performance</h3>
-                    <p className="mt-1 max-w-2xl text-sm text-gray-500">
-                      Grade distribution and attendance of enrolled students.
-                    </p>
-                  </div>
-                  <div className="border-t border-gray-200">
-                    <div className="px-4 py-5 sm:px-6">
-                      <div className="flex justify-between items-center mb-4">
-                        <h4 className="text-md font-medium text-gray-700">Enrolled Students</h4>
-                        <span className="text-sm text-gray-500">Total: {selectedCourse.students.length}</span>
-                      </div>
-                      <ul className="divide-y divide-gray-200">
-                        {selectedCourse.students.map((student) => (
-                          <li key={student.id} className="py-3 flex justify-between items-center">
-                            <div className="flex items-center">
-                              <div className="ml-3">
-                                <p className="text-sm font-medium text-gray-900">{student.name}</p>
-                              </div>
-                            </div>
-                            <div className="flex items-center">
-                              <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${student.attendance >= 90 ? 'bg-green-100 text-green-800' :
-                                student.attendance >= 80 ? 'bg-yellow-100 text-yellow-800' :
-                                  'bg-red-100 text-red-800'
-                                }`}>
-                                Attendance: {student.attendance}%
-                              </span>
-                              <span className="ml-2 px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
-                                Grade: {student.grade}
-                              </span>
-                            </div>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <div className="mt-6 flex justify-end">
+              <div className="mt-6 flex justify-end space-x-4">
                 <button
-                  onClick={() => handleDeleteCourse(selectedCourse.id)}
+                  onClick={() => handleDeleteSession()}
                   className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
                 >
-                  Delete Course
+                  Delete Session
                 </button>
               </div>
             </>
@@ -865,11 +661,15 @@ const ProgramList = () => {
 
   return (
     <div className="min-h-screen bg-gray-100">
-      {selectedCourse ? renderCourseDetail() :
-        selectedProgram ? renderProgramDetail() :
-          renderProgramList()}
+      {isAddingSession ? (
+        renderAddSessionForm()
+      ) : selectedSession ? (
+        renderSessionDetail()
+      ) : (
+        renderSessionList()
+      )}
     </div>
   );
 };
 
-export default ProgramList;
+export default SessionList;

@@ -128,7 +128,6 @@ class Educator(BaseModel):
     course_id: str
     joinDate: str
     address: str
-    # program: Optional[List[str]]
 
 
 class Student(BaseModel):
@@ -158,12 +157,11 @@ class Student(BaseModel):
 
 
 class Session(BaseModel):
-    session_id: Optional[str] = None
+    session_id: str
     name: str
     date_timing: datetime
     duration: int
     course_id: str
-    educator_id: str  # linked to educator
 
 
 class Assessment(BaseModel):
@@ -305,31 +303,52 @@ async def register_user(user: UserRegister):
 
 
 @app.post("/login", response_model=Token)
-async def login(form_data: OAuth2PasswordRequestForm = Depends()):
-    user = users_collection.find_one({"email": form_data.username})
-    if not user or not verify_password(form_data.password, user["password"]):
-        raise HTTPException(status_code=401, detail="Invalid credentials")
+async def login(form_data: dict):
+    # Extract username and password from the JSON body
+    username = form_data.get("username")
+    password = form_data.get("password")
+    
+    if not username or not password:
+        raise HTTPException(status_code=400, detail="Username and password are required")
 
+    # Find user by email (username in the request)
+    user = users_collection.find_one({"email": username})
+    if not user or not verify_password(password, user["password"]):
+        raise HTTPException(status_code=401, detail="Invalid credentials")
+    
     # Create token
     token_data = {"sub": user["email"], "role": user["role"]}
     access_token = create_access_token(data=token_data)
-
-    # Fetch full profile using role + profile_id
+    # print(token_data)
+    # Fetch full profile
+    # print(access_token)
     profile = None
-    if user["role"] == "educator":
-        profile = educators_collection.find_one({"educator_id": user["profile_id"]})
+    profile_id = None  # This will store either educator_id, student_id, or employee_id
+
+    if user["role"] == 'educator':
+        # print()
+        profile = educators_collection.find_one({"id": user["profile_id"]})
+        # print(profile)
+        profile_id = profile["id"] if profile else None
     elif user["role"] == "student":
         profile = students_collection.find_one({"student_id": user["profile_id"]})
+        profile_id = profile["student_id"] if profile else None
     elif user["role"] == "admin":
         profile = employees_collection.find_one({"employee_id": user["profile_id"]})
+        profile_id = profile["employee_id"] if profile else None
 
-    return {
+    # Prepare response data
+    
+    response_data = {
         "access_token": access_token,
         "token_type": "bearer",
         "role": user["role"],
         "profile": serialize(profile) if profile else None,
+        "profile_id": profile_id,  # Include the ID in the response
     }
-
+    print("one")
+    print(response_data)
+    return response_data
 
 @app.get("/protected")
 async def protected_route(current_user: dict = Depends(get_current_user)):
@@ -408,6 +427,37 @@ async def view_session(session_id: str):
         raise HTTPException(status_code=404, detail="Session not found")
     return session
 
+@app.get("/student-count/")
+async def get_student_count():
+    try:
+        # Count the number of students in the collection
+        student_count = students_collection.count_documents({})
+        return {"student_count": student_count}
+    except PyMongoError as e:
+        # Handle database-related errors
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail="Database error occurred")
+    except Exception as e:
+        # Handle unexpected errors
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail="An unexpected error occurred")
+    
+
+@app.get("/educator-count/")
+async def get_student_count():
+    try:
+        # Count the number of students in the collection
+        student_count = educators_collection.count_documents({})
+        return {"student_count": student_count}
+    except PyMongoError as e:
+        # Handle database-related errors
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail="Database error occurred")
+    except Exception as e:
+        # Handle unexpected errors
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail="An unexpected error occurred")
+    
 
 @app.get("/all-sessions/")
 async def view_all_sessions():
@@ -449,12 +499,18 @@ async def add_course(course: Course):
         traceback.print_exc()
         raise HTTPException(status_code=500, detail="An unexpected error occurred")
 
+class AttendanceRequest(BaseModel):
+    student_id: str
+    session_id: str
+    status: Literal["present", "absent"]
 
 @app.post("/mark-session-attendance/")
-async def mark_session_attendance(
-    student_id: str, session_id: str, status: Literal["present", "absent"]
-):
+async def mark_session_attendance(request: AttendanceRequest):
+    student_id = request.student_id
+    session_id = request.session_id
+    status = request.status
     # Find the student by student_id
+    print(student_id)
     student = students_collection.find_one({"student_id": student_id})
     if not student:
         raise HTTPException(status_code=404, detail="Student not found")
@@ -491,8 +547,19 @@ async def mark_session_attendance(
     }
 
 
+# from pydantic import BaseModel
+
+class AssessmentRequest(BaseModel):
+    student_id: str
+    session_id: str
+    marks_obtained: float
+
 @app.post("/mark-assessment/")
-async def mark_assessment(student_id: str, session_id: str, marks_obtained: float):
+async def mark_assessment(request: AssessmentRequest):
+    student_id = request.student_id
+    session_id = request.session_id
+    marks_obtained = request.marks_obtained
+
     # Find the student by student_id
     student = students_collection.find_one({"student_id": student_id})
     if not student:
@@ -561,11 +628,7 @@ async def get_students_in_course(course_id: str):
             status_code=404, detail="No students enrolled in this course"
         )
 
-    return {
-        "course_id": course_id,
-        "course_name": course.get("name"),
-        "students_enrolled": student_list,
-    }
+    return student_list
 
 
 # -------------------- View Student API --------------------
@@ -613,6 +676,14 @@ async def view_student(student_id: str):
 
     return student
 
+@app.get("/view-educator/{id}")
+async def view_educator(id: str):
+    
+    educator = educators_collection.find_one({"id": id}, {"_id": 0})  # Exclude MongoDB `_id`
+    if not educator:
+        raise HTTPException(status_code=404, detail="Educator not found")
+
+    return educator
 
 @app.get("/view-course/{course_id}")
 async def view_student(course_id: str):
@@ -658,7 +729,7 @@ async def delete_course(course_id: str):
 # async def update_student(student_id: str, updated_data: Student):
 #     # Convert the updated data to a dictionary, excluding unset fields
 #     update_data = updated_data.dict(exclude_unset=True, by_alias=True)
-    
+
 #     # Update the student in the database
 #     result = students_collection.update_one(
 #         {"student_id": student_id},
@@ -667,14 +738,15 @@ async def delete_course(course_id: str):
 
 #     if result.matched_count == 0:
 #         raise HTTPException(
-#             status_code=404, 
+#             status_code=404,
 #             detail="Student not found"
 #         )
-    
+
 #     if result.modified_count == 0:
 #         return {"message": "No changes made to student data"}
-    
+
 #     return {"message": "Student updated successfully"}
+
 
 @app.put("/update-student/{student_id}")
 async def update_student(student_id: str, updated_data: Student):
@@ -690,12 +762,15 @@ async def update_student(student_id: str, updated_data: Student):
     updated_student["student_id"] = student_id
 
     # Update the record in the database
-    result = students_collection.replace_one({"student_id": student_id}, updated_student)
+    result = students_collection.replace_one(
+        {"student_id": student_id}, updated_student
+    )
 
     if result.matched_count == 0:
         raise HTTPException(status_code=404, detail="Student not found")
 
     return {"message": "Student updated successfully"}
+
 
 @app.put("/update-educator/{id}")
 async def update_educator(id: str, updated_data: Educator):
@@ -726,7 +801,7 @@ async def add_educator(educator: Educator):
     }
 
 
-@app.get("/educator-dashboard")
+@app.get("/educator-dashboard/")
 async def educator_dashboard(current_user: dict = Depends(get_current_user)):
     if current_user["role"] != "educator":
         raise HTTPException(status_code=403, detail="Educator access required")

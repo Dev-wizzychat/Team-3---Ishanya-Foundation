@@ -33,12 +33,7 @@ const COLORS = ["#00C49F", "#FF4444"];
 //   { name: "Absent", value: 15, color: "#F44336" },
 // ];
 
-const courseData = [
-  { id: 1, code: "CS101", name: "Introduction to Programming", credits: 3, grade: "A" },
-  { id: 2, code: "CS201", name: "Data Structures & Algorithms", credits: 4, grade: "B+" },
-  { id: 3, code: "MATH202", name: "Discrete Mathematics", credits: 3, grade: "A-" },
-  { id: 4, code: "ENG103", name: "Technical Communication", credits: 2, grade: "B" },
-];
+
 
 // const attendanceLog = [
 //   { date: "2025-03-01", status: "Present", class: "CS101" },

@@ -139,7 +139,7 @@ const StudentDashboard = () => {
     const handleProfileSubmit = async (e) => {
         console.log("Edited Profile:", editedProfile);
         e.preventDefault();
-        c
+        
         try {
             // Update the student details on the backend
             await axios.put(`http://localhost:8000/update-student/${id}`, editedProfile);
@@ -542,7 +542,7 @@ const StudentDashboard = () => {
                         </div>
 
                         <button
-                            onClick={() => setShowEditProfile(true)}
+                            onClick={() => {setShowEditProfile(true); setEditedProfile(studentData);}}
                             className="bg-indigo-500 hover:bg-indigo-600 text-white px-4 py-2 rounded-md transition-all duration-300 shadow hover:shadow-lg"
                         >
                             Edit Student
@@ -568,6 +568,7 @@ const StudentDashboard = () => {
                         <form onSubmit={handleProfileSubmit}>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4 mb-6">
                                 {/* Personal Information */}
+                                {console.log("chkec", studentData, editedProfile)}
                                 <div className="md:col-span-2">
                                     <h4 className="font-medium text-gray-700 mb-3 border-b pb-2">Personal Information</h4>
                                 </div>

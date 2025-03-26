@@ -23,6 +23,14 @@ const StudentListPage = () => {
   const navigate = useNavigate();
   // States
   // const [students, setStudents] = useState([]);
+  const [selectedStudentForAttendance, setSelectedStudentForAttendance] = useState(null);
+  const [attendanceData, setAttendanceData] = useState({ student_id: "", session_id: "", status: "present" });
+  const [selectedStudentForAssessment, setSelectedStudentForAssessment] = useState(null);
+  const [assessmentData, setAssessmentData] = useState({
+    student_id: "",
+    session_id: "",
+    marks_obtained: "",
+  });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
@@ -107,6 +115,40 @@ const StudentListPage = () => {
   }, []);
   //add API
   // Filter students based on search criteria
+  const handleAttendanceSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      console.log("Attendance Data:", attendanceData);
+      await axios.post("http://127.0.0.1:8000/mark-session-attendance/", {
+        student_id: attendanceData.student_id,
+        session_id: attendanceData.session_id,
+        status: attendanceData.status,
+
+      });
+
+      alert("Attendance marked successfully!");
+      setSelectedStudentForAttendance(null);
+    } catch (err) {
+      console.error("Error marking attendance:", err);
+      alert("Failed to mark attendance. Please try again.");
+    }
+  };
+  const handleAssessmentSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      console.log("Assessment Data:", assessmentData);
+      await axios.post("http://127.0.0.1:8000/mark-assessment/", {
+        student_id: assessmentData.student_id,
+        session_id: assessmentData.session_id,
+        marks_obtained: parseFloat(assessmentData.marks_obtained),
+      });
+      alert("Assessment marked successfully!");
+      setSelectedStudentForAssessment(null); // Close the form
+    } catch (err) {
+      console.error("Error marking assessment:", err);
+      alert("Failed to mark assessment. Please try again.");
+    }
+  };
   const filteredStudents =
     searchQuery.trim() === ""
       ? students
@@ -555,17 +597,7 @@ const StudentListPage = () => {
                           />
                           ID
                         </label>
-                        <label className="flex items-center">
-                          <input
-                            type="radio"
-                            name="searchBy"
-                            value="city"
-                            checked={searchBy === "city"}
-                            onChange={() => setSearchBy("city")}
-                            className="mr-2"
-                          />
-                          City
-                        </label>
+
                       </div>
                     </div>
                   </div>
@@ -578,10 +610,10 @@ const StudentListPage = () => {
                   onClick={toggleNotifications}
                   className="p-2 rounded-full hover:bg-gray-100 relative"
                 >
-                  <Bell className="h-6 w-6 text-gray-500" />
-                  <span className="absolute top-0 right-0 h-4 w-4 bg-red-500 rounded-full text-xs text-white flex items-center justify-center">
+                  {/* <Bell className="h-6 w-6 text-gray-500" /> */}
+                  {/* <span className="absolute top-0 right-0 h-4 w-4 bg-red-500 rounded-full text-xs text-white flex items-center justify-center">
                     {notificationsList.filter((n) => !n.read).length}
-                  </span>
+                  </span> */}
                 </button>
 
                 {/* Notifications dropdown */}
@@ -712,7 +744,7 @@ const StudentListPage = () => {
             </button>
           </div>
 
-          
+
 
           {/* Student List or Details View */}
           {!selectedStudent && !isAddingStudent ? (
@@ -751,7 +783,9 @@ const StudentListPage = () => {
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Email
                       </th>
-                     
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Actions
+                      </th>
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
@@ -777,7 +811,28 @@ const StudentListPage = () => {
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                           {student.student_email}
                         </td>
-                        
+                        <td className="px-6 py-4 whitespace-nowrap text-sm">
+                          <button
+                            onClick={() =>
+                              setSelectedStudentForAttendance({
+                                student_id: student.student_id,
+                              })
+                            }
+                            className="px-3 py-1 bg-blue-500 text-white rounded-md hover:bg-blue-600 mr-2"
+                          >
+                            Mark Attendance
+                          </button>
+                          <button
+                            onClick={() =>
+                              setSelectedStudentForAssessment({
+                                student_id: student.student_id,
+                              })
+                            }
+                            className="px-3 py-1 bg-green-500 text-white rounded-md hover:bg-green-600"
+                          >
+                            Mark Session
+                          </button>
+                        </td>
                       </tr>
                     ))}
                   </tbody>
@@ -1174,6 +1229,132 @@ const StudentListPage = () => {
                     className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700"
                   >
                     {isAddingStudent ? "Add Student" : "Save Changes"}
+                  </button>
+                </div>
+              </form>
+            </div>
+          )}
+          {selectedStudentForAttendance && (
+            <div className="fixed top-0 right-0 h-full w-1/3 bg-white shadow-lg p-6 z-50">
+              <h2 className="text-lg font-semibold text-gray-800 mb-4">Mark Attendance</h2>
+              <form onSubmit={handleAttendanceSubmit}>
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700">Student ID</label>
+                  <input
+                    type="text"
+                    value={selectedStudentForAttendance.student_id}
+                    readOnly
+                    className="w-full p-2 border border-gray-300 rounded-md"
+                  />
+                </div>
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700">Session ID</label>
+                  <input
+                    type="text"
+                    value={attendanceData.session_id}
+                    onChange={(e) =>
+                      setAttendanceData((prev) => ({
+                        ...prev,
+                        session_id: e.target.value,
+                        student_id: selectedStudentForAttendance.student_id,
+                      }))
+                    }
+                    className="w-full p-2 border border-gray-300 rounded-md"
+                    required
+                  />
+                </div>
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700">Status</label>
+                  <select
+                    value={attendanceData.status}
+                    onChange={(e) =>
+                      setAttendanceData((prev) => ({
+                        ...prev,
+                        status: e.target.value,
+                      }))
+                    }
+                    className="w-full p-2 border border-gray-300 rounded-md"
+                    required
+                  >
+                    <option value="present">Present</option>
+                    <option value="absent">Absent</option>
+                  </select>
+                </div>
+                <div className="flex justify-end">
+                  <button
+                    type="button"
+                    onClick={() => setSelectedStudentForAttendance(null)}
+                    className="px-4 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600 mr-2"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
+                  >
+                    Submit
+                  </button>
+                </div>
+              </form>
+            </div>
+          )}
+          {selectedStudentForAssessment && (
+            <div className="fixed top-0 right-0 h-full w-1/3 bg-white shadow-lg p-6 z-50">
+              <h2 className="text-lg font-semibold text-gray-800 mb-4">Mark Assessment</h2>
+              <form onSubmit={handleAssessmentSubmit}>
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700">Student ID</label>
+                  <input
+                    type="text"
+                    value={selectedStudentForAssessment.student_id}
+                    readOnly
+                    className="w-full p-2 border border-gray-300 rounded-md"
+                  />
+                </div>
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700">Session ID</label>
+                  <input
+                    type="text"
+                    value={assessmentData.session_id}
+                    onChange={(e) =>
+                      setAssessmentData((prev) => ({
+                        ...prev,
+                        session_id: e.target.value,
+                        student_id: selectedStudentForAssessment.student_id,
+                      }))
+                    }
+                    className="w-full p-2 border border-gray-300 rounded-md"
+                    required
+                  />
+                </div>
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700">Marks Obtained</label>
+                  <input
+                    type="number"
+                    value={assessmentData.marks_obtained}
+                    onChange={(e) =>
+                      setAssessmentData((prev) => ({
+                        ...prev,
+                        marks_obtained: e.target.value,
+                      }))
+                    }
+                    className="w-full p-2 border border-gray-300 rounded-md"
+                    required
+                  />
+                </div>
+                <div className="flex justify-end">
+                  <button
+                    type="button"
+                    onClick={() => setSelectedStudentForAssessment(null)}
+                    className="px-4 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600 mr-2"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600"
+                  >
+                    Submit
                   </button>
                 </div>
               </form>

@@ -36,7 +36,7 @@ function App() {
         <Route path="/students" element={<Navigate to="/admin/student-list" replace />} />
         <Route path="/admin/educator-list" element={<TeacherList />} />
         <Route path="/admin/program-list" element={<ProgramList />} />
-        <Route path="/educator-dashboard" element={<EducatorDashboard />} />
+        <Route path="/educator-dashboard/:id" element={<EducatorDashboard />} />
         <Route path="/student-dashboard/:id" element={<StudentDashboard />} />
         <Route path="/admin/approval-requests" element={<Approvalrequest />} />
       </Routes>

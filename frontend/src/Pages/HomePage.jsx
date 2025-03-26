@@ -198,12 +198,12 @@ export default function LandingPage() {
                       Explore Courses
                     </a>
                     {/* Enroll Now Button */}
-                    <a
+                    {/* <a
                       href="/enroll"
                       className="px-8 py-3 bg-blue-600 text-white text-lg font-semibold rounded-md shadow-md border border-transparent transition duration-300 hover:scale-90 hover:bg-white hover:text-blue-600 hover:border-blue-600"
                     >
                       Enroll Now
-                    </a>
+                    </a> */}
                   </div>
                 </div>
 
@@ -481,12 +481,7 @@ export default function LandingPage() {
           </div>
 
           <div className="mt-10 flex justify-center">
-            <a
-              href="/enroll"
-              className="px-8 py-3 bg-blue-600 text-white text-lg font-semibold rounded-md transition duration-300 hover:scale-90 hover:bg-white hover:text-blue-600"
-            >
-              Enroll Now
-            </a>
+            
           </div>
         </div>
       </section>

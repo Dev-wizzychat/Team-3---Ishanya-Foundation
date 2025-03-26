@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Search, Plus, Edit, User, LogOut, ChevronDown, X, Eye, Trash2, BarChart, Filter, Download, Mail, Phone, Calendar, MapPin } from 'lucide-react';
 import axios from "axios";
+import { useNavigate } from "react-router-dom";
 const TeachersListPage = () => {
   // Sample teachers data
-
+  const navigate = useNavigate();
   // State for UI controls
   const [teachers, setTeachers] = useState([]);
   // const [searchTerm, setSearchTerm] = useState('');
@@ -69,7 +70,9 @@ const TeachersListPage = () => {
       return bValue.localeCompare(aValue);
     }
   });
-
+  const navigateToDashboard = (id) => {
+    navigate(`/educator-dashboard/${id}`);
+  };
   // Teacher selection for details view
   const handleTeacherSelect = (teacher) => {
     setSelectedTeacher(teacher);
@@ -332,22 +335,7 @@ const TeachersListPage = () => {
       {/* Main content */}
       <main className="flex-1 max-w-7xl mx-auto px-4 py-8">
         {/* Tabs */}
-        <div className="mb-6 border-b border-gray-200">
-          <div className="flex space-x-8">
-            <button
-              className={`pb-4 px-1 text-sm font-medium ${activeTab === 'list' ? 'text-indigo-600 border-b-2 border-indigo-600' : 'text-gray-500 hover:text-gray-700'}`}
-              onClick={() => setActiveTab('list')}
-            >
-              Teachers List
-            </button>
-            <button
-              className={`pb-4 px-1 text-sm font-medium ${activeTab === 'dashboard' ? 'text-indigo-600 border-b-2 border-indigo-600' : 'text-gray-500 hover:text-gray-700'}`}
-              onClick={() => setActiveTab('dashboard')}
-            >
-              Dashboard
-            </button>
-          </div>
-        </div>
+
 
         {activeTab === 'list' && (
           <>
@@ -388,7 +376,7 @@ const TeachersListPage = () => {
 
                     {isFilterOpen && (
                       <div className="absolute right-0 mt-2 w-36 bg-white rounded-md shadow-lg py-1 z-10 border border-gray-200">
-                        {['name', 'id', 'subject', 'city', 'email'].map(filter => (
+                        {['name', 'id', 'subject', 'email'].map(filter => (
                           <button
                             key={filter}
                             className={`w-full text-left px-4 py-2 text-sm hover:bg-indigo-50 transition duration-150 ${searchFilter === filter ? 'text-indigo-600 font-medium bg-indigo-50' : 'text-gray-700'}`}
@@ -438,7 +426,7 @@ const TeachersListPage = () => {
                     >
                       <option value="name">Sort by Name</option>
                       <option value="id">Sort by ID</option>
-                      <option value="subject">Sort by Subject</option>
+
                       <option value="joinDate">Sort by Join Date</option>
                     </select>
                     <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
@@ -465,12 +453,7 @@ const TeachersListPage = () => {
                   <span className="font-medium">Add Teacher</span>
                 </button>
 
-                <button
-                  className="flex items-center justify-center space-x-2 bg-white text-gray-700 px-4 py-3 rounded-lg border border-gray-300 hover:bg-gray-50 shadow-sm transition-all"
-                  title="Export Data"
-                >
-                  <Download className="h-5 w-5" />
-                </button>
+
               </div>
             </div>
 
@@ -495,6 +478,7 @@ const TeachersListPage = () => {
                         <th scope="col" className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                       </tr>
                     </thead>
+
                     <tbody className="bg-white divide-y divide-gray-200">
                       {filteredTeachers.length > 0 ? (
                         filteredTeachers.map((teacher) => (
@@ -537,7 +521,13 @@ const TeachersListPage = () => {
                                 >
                                   <Edit className="h-4 w-4" />
                                 </button>
-                                
+                                <button
+                                  onClick={() => navigateToDashboard(teacher.id)}
+                                  className="p-1.5 text-green-600 hover:text-green-800 rounded hover:bg-green-50 transition-colors"
+                                  title="Go to Dashboard"
+                                >
+                                  <BarChart className="h-4 w-4" />
+                                </button>
                               </div>
                             </td>
                           </tr>
@@ -604,94 +594,21 @@ const TeachersListPage = () => {
 
                           <div className="flex items-center space-x-3 text-gray-600">
                             <MapPin className="h-5 w-5 text-gray-400" />
-                            <span>{selectedTeacher.city}</span>
+                            <span>{selectedTeacher.address}</span>
                           </div>
 
                           <div className="flex items-center space-x-3 text-gray-600">
                             <Calendar className="h-5 w-5 text-gray-400" />
                             <span>Joined on {formatDate(selectedTeacher.joinDate)}</span>
                           </div>
+                          <div className="flex items-center space-x-3 text-gray-600">
+                            {/* <Calendar className="h-5 w-5 text-gray-400" /> */}
+                            <span><b>Course ID:</b> {selectedTeacher.course_id}</span>
+                          </div>
                         </div>
                       </div>
 
-                      {/* Courses Section */}
-                      <div className="mb-6">
-                        <h4 className="text-sm font-medium text-gray-500 uppercase tracking-wider mb-3">Courses</h4>
-                        <div className="bg-gray-50 rounded-lg p-3">
-                          {selectedTeacher.courses ? (
-                            <div className="space-y-2">
-                              {selectedTeacher.courses.map((course, index) => (
-                                <div key={index} className="flex justify-between items-center bg-white p-2 rounded border border-gray-200">
-                                  <div>
-                                    <p className="font-medium text-gray-800">{course.name}</p>
-                                    <p className="text-xs text-gray-500">Code: {course.code}</p>
-                                  </div>
-                                  <span className="px-2 py-1 bg-indigo-50 text-indigo-600 text-xs rounded-full">
-                                    {course.students} students
-                                  </span>
-                                </div>
-                              ))}
-                            </div>
-                          ) : (
-                            <p className="text-gray-500 text-sm italic">No courses assigned</p>
-                          )}
-                        </div>
-                      </div>
 
-                      {/* Mentored Students */}
-                      <div className="mb-6">
-                        <h4 className="text-sm font-medium text-gray-500 uppercase tracking-wider mb-3">Mentored Students</h4>
-                        <div className="bg-gray-50 rounded-lg p-3">
-                          {selectedTeacher.mentoredStudents && selectedTeacher.mentoredStudents.length > 0 ? (
-                            <div className="space-y-2 max-h-40 overflow-y-auto">
-                              {selectedTeacher.mentoredStudents.map((student, index) => (
-                                <div key={index} className="flex items-center space-x-2 bg-white p-2 rounded border border-gray-200">
-                                  <div className="h-8 w-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center flex-shrink-0">
-                                    <span className="font-medium text-xs">{student.name.split(' ').map(n => n[0]).join('')}</span>
-                                  </div>
-                                  <div className="flex-1">
-                                    <p className="font-medium text-gray-800">{student.name}</p>
-                                    <p className="text-xs text-gray-500">{student.grade}</p>
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
-                          ) : (
-                            <p className="text-gray-500 text-sm italic">No mentored students</p>
-                          )}
-                        </div>
-                      </div>
-
-                      {/* Weekly Schedule */}
-                      <div className="mb-6">
-                        <h4 className="text-sm font-medium text-gray-500 uppercase tracking-wider mb-3">Weekly Schedule</h4>
-                        <div className="bg-gray-50 rounded-lg p-3">
-                          {selectedTeacher.schedule && Object.keys(selectedTeacher.schedule).length > 0 ? (
-                            <div className="space-y-2">
-                              {Object.entries(selectedTeacher.schedule).map(([day, slots]) => (
-                                <div key={day} className="bg-white p-2 rounded border border-gray-200">
-                                  <p className="font-medium text-gray-800 mb-1">{day}</p>
-                                  {slots.length > 0 ? (
-                                    <div className="space-y-1">
-                                      {slots.map((slot, idx) => (
-                                        <div key={idx} className="flex text-sm">
-                                          <span className="text-gray-500 w-20">{slot.time}</span>
-                                          <span className="text-indigo-600">{slot.course}</span>
-                                          <span className="text-gray-400 ml-2 text-xs">({slot.room})</span>
-                                        </div>
-                                      ))}
-                                    </div>
-                                  ) : (
-                                    <p className="text-xs text-gray-500 italic">No classes</p>
-                                  )}
-                                </div>
-                              ))}
-                            </div>
-                          ) : (
-                            <p className="text-gray-500 text-sm italic">No schedule available</p>
-                          )}
-                        </div>
-                      </div>
 
                       <div className="mt-8 flex space-x-3">
                         <button
@@ -702,7 +619,7 @@ const TeachersListPage = () => {
                           Edit Details
                         </button>
 
-                        
+
                       </div>
                     </div>
                   )}
@@ -810,6 +727,17 @@ const TeachersListPage = () => {
                             className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
                             value={editedTeacher.joinDate || ''}
                             onChange={(e) => handleFieldChange('joinDate', e.target.value)}
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Course ID
+                          </label>
+                          <input
+                            type="text"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
+                            value={editedTeacher.course_id || ''}
+                            onChange={(e) => handleFieldChange('course_id', e.target.value)}
                           />
                         </div>
                       </div>

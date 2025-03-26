@@ -65,18 +65,18 @@ const AddStudentForm = () => {
   const educators = ["Educator 1", "Educator 2", "Educator 3", "Educator 4"];
   const programs = ["Program A", "Program B", "Program C", "Program D"];
   const diagnoses = ["Autism", "ADHD", "Learning Disability", "Developmental Delay", "Other"];
-  
+
   return (
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="max-w-4xl mx-auto px-4">
         <div className="bg-white rounded-lg shadow-lg p-6 md:p-8 transition-all duration-300 hover:shadow-xl">
           <h1 className="text-3xl font-bold text-center text-blue-600 mb-8">Registration Form</h1>
-          
+
           <form onSubmit={handleSubmit} className="space-y-8">
             {/* Basic Information Section */}
             <div className="border-b border-gray-200 pb-6">
               <h2 className="text-xl font-semibold text-blue-500 mb-4">Basic Information</h2>
-              
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
                   <label htmlFor="name" className="block text-sm font-medium text-gray-700">Full Name</label>
@@ -90,7 +90,7 @@ const AddStudentForm = () => {
                     required
                   />
                 </div>
-                
+
                 <div className="space-y-2">
                   <label htmlFor="photo" className="block text-sm font-medium text-gray-700">Photo</label>
                   <input
@@ -101,7 +101,7 @@ const AddStudentForm = () => {
                     accept="image/*"
                   />
                 </div>
-                
+
                 <div className="space-y-2">
                   <label htmlFor="gender" className="block text-sm font-medium text-gray-700">Gender</label>
                   <select
@@ -118,7 +118,7 @@ const AddStudentForm = () => {
                     <option value="other">Other</option>
                   </select>
                 </div>
-                
+
                 <div className="space-y-2">
                   <label htmlFor="dob" className="block text-sm font-medium text-gray-700">Date of Birth</label>
                   <input
@@ -133,11 +133,11 @@ const AddStudentForm = () => {
                 </div>
               </div>
             </div>
-            
+
             {/* Diagnosis Section */}
             <div className="border-b border-gray-200 pb-6">
               <h2 className="text-xl font-semibold text-blue-500 mb-4">Diagnosis Information</h2>
-              
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
                   <label htmlFor="primaryDiagnosis" className="block text-sm font-medium text-gray-700">Primary Diagnosis</label>
@@ -155,7 +155,7 @@ const AddStudentForm = () => {
                     ))}
                   </select>
                 </div>
-                
+
                 <div className="space-y-2">
                   <label htmlFor="comorbidity" className="block text-sm font-medium text-gray-700">Comorbidity</label>
                   <select
@@ -171,29 +171,26 @@ const AddStudentForm = () => {
                     <option value="no">No</option>
                   </select>
                 </div>
-                
+
                 <div className="space-y-2">
                   <label htmlFor="udid" className="block text-sm font-medium text-gray-700">UDID</label>
-                  <select
+                  <input
+                    type="text"
                     id="udid"
                     name="udid"
                     value={formData.udid}
                     onChange={handleChange}
                     className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    required
-                  >
-                    <option value="">Select Option</option>
-                    <option value="yes">Yes</option>
-                    <option value="no">No</option>
-                  </select>
+                    // required
+                  />
                 </div>
               </div>
             </div>
-            
+
             {/* Program Information */}
             <div className="border-b border-gray-200 pb-6">
               <h2 className="text-xl font-semibold text-blue-500 mb-4">Program Information</h2>
-              
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
                   <label htmlFor="program1" className="block text-sm font-medium text-gray-700">Program 1</label>
@@ -210,7 +207,7 @@ const AddStudentForm = () => {
                     ))}
                   </select>
                 </div>
-                
+
                 <div className="space-y-2">
                   <label htmlFor="program2" className="block text-sm font-medium text-gray-700">Program 2</label>
                   <select
@@ -226,7 +223,7 @@ const AddStudentForm = () => {
                     ))}
                   </select>
                 </div>
-                
+
                 <div className="space-y-2">
                   <label htmlFor="sessionsPerWeek" className="block text-sm font-medium text-gray-700">Sessions Per Week</label>
                   <input
@@ -239,7 +236,7 @@ const AddStudentForm = () => {
                     className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   />
                 </div>
-                
+
                 <div className="space-y-2">
                   <label className="block text-sm font-medium text-gray-700">Timings</label>
                   <div className="flex space-x-4">
@@ -261,7 +258,7 @@ const AddStudentForm = () => {
                   </div>
                 </div>
               </div>
-              
+
               <div className="mt-4">
                 <label className="block text-sm font-medium text-gray-700 mb-2">Days of Week</label>
                 <div className="flex flex-wrap gap-4">
@@ -280,11 +277,11 @@ const AddStudentForm = () => {
                 </div>
               </div>
             </div>
-            
+
             {/* Educator Information */}
             <div className="border-b border-gray-200 pb-6">
               <h2 className="text-xl font-semibold text-blue-500 mb-4">Educator Information</h2>
-              
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
                   <label htmlFor="educatorName" className="block text-sm font-medium text-gray-700">Primary Educator</label>
@@ -301,7 +298,7 @@ const AddStudentForm = () => {
                     ))}
                   </select>
                 </div>
-                
+
                 <div className="space-y-2">
                   <label htmlFor="secondaryEducatorName" className="block text-sm font-medium text-gray-700">Secondary Educator</label>
                   <select
@@ -319,11 +316,11 @@ const AddStudentForm = () => {
                 </div>
               </div>
             </div>
-            
+
             {/* Personal Information */}
             <div className="border-b border-gray-200 pb-6">
               <h2 className="text-xl font-semibold text-blue-500 mb-4">Personal Information</h2>
-              
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
                   <label htmlFor="fathersName" className="block text-sm font-medium text-gray-700">Father's Name</label>
@@ -336,7 +333,7 @@ const AddStudentForm = () => {
                     className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   />
                 </div>
-                
+
                 <div className="space-y-2">
                   <label htmlFor="mothersName" className="block text-sm font-medium text-gray-700">Mother's Name</label>
                   <input
@@ -348,7 +345,7 @@ const AddStudentForm = () => {
                     className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   />
                 </div>
-                
+
                 <div className="space-y-2">
                   <label htmlFor="bloodGroup" className="block text-sm font-medium text-gray-700">Blood Group</label>
                   <input
@@ -360,7 +357,7 @@ const AddStudentForm = () => {
                     className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   />
                 </div>
-                
+
                 <div className="space-y-2">
                   <label htmlFor="allergies" className="block text-sm font-medium text-gray-700">Allergies</label>
                   <textarea
@@ -374,11 +371,11 @@ const AddStudentForm = () => {
                 </div>
               </div>
             </div>
-            
+
             {/* Contact Information */}
             <div className="border-b border-gray-200 pb-6">
               <h2 className="text-xl font-semibold text-blue-500 mb-4">Contact Information</h2>
-              
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
                   <label htmlFor="contactNumber" className="block text-sm font-medium text-gray-700">Contact Number</label>
@@ -392,7 +389,7 @@ const AddStudentForm = () => {
                     required
                   />
                 </div>
-                
+
                 <div className="space-y-2">
                   <label htmlFor="alternateContactNumber" className="block text-sm font-medium text-gray-700">Alternate Contact Number</label>
                   <input
@@ -404,7 +401,7 @@ const AddStudentForm = () => {
                     className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   />
                 </div>
-                
+
                 <div className="space-y-2">
                   <label htmlFor="parentsEmail" className="block text-sm font-medium text-gray-700">Parent's Email</label>
                   <input
@@ -417,7 +414,7 @@ const AddStudentForm = () => {
                     required
                   />
                 </div>
-                
+
                 <div className="space-y-2">
                   <label htmlFor="studentsEmail" className="block text-sm font-medium text-gray-700">Student's Email</label>
                   <input
@@ -429,7 +426,7 @@ const AddStudentForm = () => {
                     className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   />
                 </div>
-                
+
                 <div className="space-y-2 md:col-span-2">
                   <label htmlFor="address" className="block text-sm font-medium text-gray-700">Address</label>
                   <textarea
@@ -442,7 +439,7 @@ const AddStudentForm = () => {
                     required
                   ></textarea>
                 </div>
-                
+
                 <div className="space-y-2">
                   <label htmlFor="transport" className="block text-sm font-medium text-gray-700">Transport Required</label>
                   <select
@@ -460,11 +457,11 @@ const AddStudentForm = () => {
                 </div>
               </div>
             </div>
-            
+
             {/* Additional Information */}
             <div className="pb-6">
               <h2 className="text-xl font-semibold text-blue-500 mb-4">Additional Information</h2>
-              
+
               <div className="grid grid-cols-1 gap-6">
                 <div className="space-y-2">
                   <label htmlFor="strengths" className="block text-sm font-medium text-gray-700">Strengths</label>
@@ -477,7 +474,7 @@ const AddStudentForm = () => {
                     rows="3"
                   ></textarea>
                 </div>
-                
+
                 <div className="space-y-2">
                   <label htmlFor="weaknesses" className="block text-sm font-medium text-gray-700">Areas for Improvement</label>
                   <textarea
@@ -489,7 +486,7 @@ const AddStudentForm = () => {
                     rows="3"
                   ></textarea>
                 </div>
-                
+
                 <div className="space-y-2">
                   <label htmlFor="comments" className="block text-sm font-medium text-gray-700">Additional Comments</label>
                   <textarea
@@ -503,7 +500,7 @@ const AddStudentForm = () => {
                 </div>
               </div>
             </div>
-            
+
             {/* Form Buttons */}
             <div className="flex justify-end space-x-4">
               <button

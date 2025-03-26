@@ -6,7 +6,7 @@ const StudentFAQSection = ({ bg2, faq2 }) => {
   const [activeIndex, setActiveIndex] = useState(null);
   const [studentId, setStudentId] = useState(""); // State to store the entered Student ID
   const navigate = useNavigate(); // Hook for navigation
-
+  const [educatorId, setEducatorId] = useState("");
   const handleQuestionClick = (index) => {
     setActiveIndex(activeIndex === index ? null : index);
   };
@@ -18,7 +18,13 @@ const StudentFAQSection = ({ bg2, faq2 }) => {
       alert("Please enter a valid Student ID."); // Alert if the input is empty
     }
   };
-
+  const handleSubmitEducator = () => {
+    if (educatorId.trim() !== "") {
+      navigate(`/educator-dashboard/${educatorId}`); // Navigate to student-dashboard with the Student ID
+    } else {
+      alert("Please enter a valid Educator ID."); // Alert if the input is empty
+    }
+  };
   return (
     <section className="py-10">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -37,6 +43,24 @@ const StudentFAQSection = ({ bg2, faq2 }) => {
             />
             <button
               onClick={handleSubmit}
+              className="w-full bg-orange-500 text-white px-4 py-2 rounded-md hover:bg-orange-600 transition"
+            >
+              Submit
+            </button>
+          </div>
+          <h2 className="text-2xl font-semibold mb-4 text-center text-white">
+            Are You An Educator?
+          </h2>
+          <div className="space-y-4">
+            <input
+              type="text"
+              placeholder="Enter your Student ID"
+              value={educatorId}
+              onChange={(e) => setEducatorId(e.target.value)}
+              className="w-full px-4 py-2 border border-white rounded-md bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-orange-500"
+            />
+            <button
+              onClick={handleSubmitEducator}
               className="w-full bg-orange-500 text-white px-4 py-2 rounded-md hover:bg-orange-600 transition"
             >
               Submit

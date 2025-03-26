@@ -1,22 +1,50 @@
-import React, { useState } from 'react';
+import React, { useState ,useEffect} from 'react';
 import { useNavigate } from "react-router-dom";
 import CalendarScheduleViewer from '../components/Calendarschedule';
 import { Link } from "react-router-dom";
 import { Bell, Home, Search, User, Settings, LogOut, HelpCircle, CheckCircle, XCircle } from 'lucide-react';
-
+import axios from 'axios';
 const AdminDashboard = () => {
  const navigate = useNavigate();
 
-  const [searchQuery, setSearchQuery] = useState('');
-  const [searchBy, setSearchBy] = useState('name');
-  const [showSearchOptions, setShowSearchOptions] = useState(false);
-  const [showNotifications, setShowNotifications] = useState(false);
+
+ // const [showNotifications, setShowNotifications] = useState(false);
+  const [studentCount, setStudentCount] = useState(0);
+  const [educatorCount, setEducatorCount] = useState(0); 
   const [showProfile, setShowProfile] = useState(false);
-  const [filteredUsers, setFilteredUsers] = useState([]);
-  const [hasSearched, setHasSearched] = useState(false);
   const [selectedTab, setSelectedTab] = useState('dashboard');
-  
+  const [studentSearchQuery, setStudentSearchQuery] = useState('');
+  const [studentSearchBy, setStudentSearchBy] = useState('name');
+  const [appliedStudentSearch, setAppliedStudentSearch] = useState({ 
+    query: '', 
+    by: 'name' 
+  });
+  useEffect(() => {
+    const fetchStudentCount = async () => {
+      try {
+        const response = await axios.get('http://localhost:8000/student-count/'); // Replace with your API URL
+        setStudentCount(response.data.student_count); // Update state with the count
+      } catch (error) {
+        console.error('Error fetching student count:', error);
+      }
+    };
+
+    fetchStudentCount();
+  }, []); 
+  useEffect(() => {
+    const fetchEducatorCount = async () => {
+      try {
+        const response = await axios.get('http://localhost:8000/educator-count/'); // Replace with your API URL
+        setEducatorCount(response.data.student_count); // Update state with the count
+      } catch (error) {
+        console.error('Error fetching educator count:', error);
+      }
+    };
+
+    fetchEducatorCount();
+  }, []);
   // Sample admin data
+  console.log(setEducatorCount);
   const adminData = {
     name: "Admin User",
     email: "admin@example.com",
@@ -90,21 +118,17 @@ const AdminDashboard = () => {
     }
   ];
 
-  const handleSearchChange = (e) => {
+ {/* const handleSearchChange = (e) => {
     setSearchQuery(e.target.value);
-  };
+  };*/}
 
-  const toggleSearchOptions = () => {
+{/*}  const toggleSearchOptions = () => {
     setShowSearchOptions(!showSearchOptions);
     if (showNotifications) setShowNotifications(false);
     if (showProfile) setShowProfile(false);
-  };
+  };*/}
 
-  const toggleNotifications = () => {
-    setShowNotifications(!showNotifications);
-    if (showSearchOptions) setShowSearchOptions(false);
-    if (showProfile) setShowProfile(false);
-  };
+
   
   const toggleProfile = () => {
     setShowProfile(!showProfile);
@@ -112,7 +136,7 @@ const AdminDashboard = () => {
     if (showNotifications) setShowNotifications(false);
   };
 
-  const handleSearch = () => {
+{/*  const handleSearch = () => {
     const filtered = users.filter(user => {
       const value = user[searchBy].toLowerCase();
       return value.includes(searchQuery.toLowerCase());
@@ -120,18 +144,24 @@ const AdminDashboard = () => {
     setFilteredUsers(filtered);
     setHasSearched(true);
     setShowSearchOptions(false);
-  };
+  };*/}
 
-  const handleKeyPress = (e) => {
+{/*  const handleKeyPress = (e) => {
     if (e.key === 'Enter') {
       handleSearch();
     }
-  };
+  };*/}
 
-  const handleClearSearch = () => {
+ {/*} const handleClearSearch = () => {
     setSearchQuery('');
     setHasSearched(false);
     setFilteredUsers([]);
+  };*/}
+  const handleStudentSearch = () => {
+    setAppliedStudentSearch({
+      query: studentSearchQuery,
+      by: studentSearchBy
+    });
   };
 
   // New method to render tab content
@@ -150,7 +180,7 @@ const AdminDashboard = () => {
   const renderDashboardContent = () => (
     <>
       {/* Existing dashboard stats code */}
-      {!hasSearched && (
+   
        <div>
 
        <div className="mt-6 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
@@ -187,7 +217,7 @@ const AdminDashboard = () => {
                    <dt className="text-sm font-medium text-gray-500 truncate">Educators</dt>
                    <dd className="flex items-baseline">
                      <div className="text-2xl font-semibold text-gray-900">
-                       {users.filter(user => user.profession === 'teacher').length}
+                       {educatorCount}
                      </div>
                    </dd>
                  </dl>
@@ -211,7 +241,7 @@ const AdminDashboard = () => {
                    <dt className="text-sm font-medium text-gray-500 truncate">Students</dt>
                    <dd className="flex items-baseline">
                      <div className="text-2xl font-semibold text-gray-900">
-                       {users.filter(user => user.profession === 'student').length}
+                       {studentCount}
                      </div>
                    </dd>
                  </dl>
@@ -226,20 +256,51 @@ const AdminDashboard = () => {
       <CalendarScheduleViewer />
        </div>}
      </div>
-      )}
+      
     </>
   );
-
+{
   // New method to render student enrollments
-  const renderStudentEnrollments = () => {
-    const studentList = studentEnrollments.filter(enrollment => 
-      enrollment.name.toLowerCase().includes(searchQuery.toLowerCase())
-    );
+{/*  const renderStudentEnrollments = () => {
+    const studentList = studentEnrollments.filter(enrollment => {
+      const value = enrollment[appliedStudentSearch.by].toLowerCase();
+      return value.includes(appliedStudentSearch.query.toLowerCase());
+    });
 
     return (
       <div className="bg-white shadow rounded-lg p-6">
         <h1 className="text-2xl font-semibold text-gray-800 mb-4">Student Enrollments</h1>
         
+       
+        <div className="mb-4 flex items-center gap-2">
+          <div className="flex-1 relative">
+            <input
+              type="text"
+              placeholder="Search..."
+              className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              value={studentSearchQuery}
+              onChange={(e) => setStudentSearchQuery(e.target.value)}
+              onKeyPress={(e) => e.key === 'Enter' && handleStudentSearch()}
+            />
+            <select
+              value={studentSearchBy}
+              onChange={(e) => setStudentSearchBy(e.target.value)}
+              className="absolute right-2 top-2 border rounded-lg px-2 py-1 bg-white text-sm"
+            >
+              <option value="name">Name</option>
+              <option value="course">Course</option>
+            </select>
+          </div>
+          <button
+            onClick={handleStudentSearch}
+            className="px-4 py-2 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 flex items-center"
+          >
+            <Search className="h-5 w-5 mr-2" />
+            Search
+          </button>
+        </div>
+
+       
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
@@ -290,8 +351,10 @@ const AdminDashboard = () => {
           </table>
         </div>
       </div>
-    );
+    );*/}
   };
+
+
 
   return (
     <div className="min-h-screen bg-gray-100">
@@ -314,129 +377,8 @@ const AdminDashboard = () => {
             
             {/* Right side - Search, notifications, and profile */}
             <div className="flex items-center">
-              {/* Search */}
-              <div className="relative mr-4">
-                <div className="flex items-center border rounded-lg overflow-hidden">
-                  <input
-                    type="text"
-                    placeholder="Search..."
-                    className="px-4 py-2 w-48 focus:outline-none"
-                    value={searchQuery}
-                    onChange={handleSearchChange}
-                    onKeyPress={handleKeyPress}
-                  />
-                  <button 
-                    onClick={handleSearch}
-                    className="bg-indigo-500 p-2 hover:bg-indigo-600 text-white"
-                  >
-                    <Search className="h-5 w-5" />
-                  </button>
-                  <button 
-                    onClick={toggleSearchOptions}
-                    className="bg-gray-100 p-2 hover:bg-gray-200"
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                    </svg>
-                  </button>
-                </div>
-                
-                {/* Search options dropdown */}
-                {showSearchOptions && (
-                  <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-10">
-                    <div className="p-2">
-                      <p className="text-xs font-semibold text-gray-500 mb-2">Search by:</p>
-                      <div className="space-y-1">
-                        <label className="flex items-center">
-                          <input 
-                            type="radio" 
-                            name="searchBy" 
-                            value="name" 
-                            checked={searchBy === 'name'} 
-                            onChange={() => setSearchBy('name')}
-                            className="mr-2"
-                          />
-                          Name
-                        </label>
-                        <label className="flex items-center">
-                          <input 
-                            type="radio" 
-                            name="searchBy" 
-                            value="id" 
-                            checked={searchBy === 'id'} 
-                            onChange={() => setSearchBy('id')}
-                            className="mr-2"
-                          />
-                          ID
-                        </label>
-                        <label className="flex items-center">
-                          <input 
-                            type="radio" 
-                            name="searchBy" 
-                            value="city" 
-                            checked={searchBy === 'city'} 
-                            onChange={() => setSearchBy('city')}
-                            className="mr-2"
-                          />
-                          City
-                        </label>
-                        <label className="flex items-center">
-                          <input 
-                            type="radio" 
-                            name="searchBy" 
-                            value="profession" 
-                            checked={searchBy === 'profession'} 
-                            onChange={() => setSearchBy('profession')}
-                            className="mr-2"
-                          />
-                          Profession
-                        </label>
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-              
-              {/* Notifications */}
-              <div className="relative mr-4">
-                <button 
-                  onClick={toggleNotifications}
-                  className="p-2 rounded-full hover:bg-gray-100 relative"
-                >
-                  <Bell className="h-6 w-6 text-gray-500" />
-                  <span className="absolute top-0 right-0 h-4 w-4 bg-red-500 rounded-full text-xs text-white flex items-center justify-center">
-                    3
-                  </span>
-                </button>
-                
-                {/* Notifications dropdown */}
-                {showNotifications && (
-                  <div className="absolute right-0 mt-2 w-72 bg-white rounded-md shadow-lg z-10">
-                    <div className="p-3">
-                      <div className="flex justify-between items-center mb-2">
-                        <h3 className="text-sm font-semibold">Notifications</h3>
-                        <button className="text-xs text-indigo-600 hover:text-indigo-800">
-                          Mark all as read  
-                        </button>
-                      </div>
-                      <div className="divide-y">
-                        {notifications.map(notification => (
-                          <div key={notification.id} className="py-2">
-                            <p className="text-sm text-gray-800">{notification.text}</p>
-                            <p className="text-xs text-gray-500">{notification.time}</p>
-                          </div>
-                        ))}
-                      </div>
-                      <div className="mt-2 pt-2 border-t">
-                        <button className="text-xs text-indigo-600 hover:text-indigo-800 w-full text-center">
-                          View all notifications
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-              
+            
+
               {/* Profile */}
               <div className="relative">
                 <button 
@@ -479,14 +421,14 @@ const AdminDashboard = () => {
                       </div>
                       
                       <div className="border-t pt-3 mt-3">
-                        <button className="flex items-center w-full py-2 px-1 text-sm text-gray-700 hover:text-indigo-600 hover:bg-gray-50 rounded">
+                       {/* <button className="flex items-center w-full py-2 px-1 text-sm text-gray-700 hover:text-indigo-600 hover:bg-gray-50 rounded">
                           <Settings className="h-4 w-4 mr-2" />
                           Settings
                         </button>
                         <button className="flex items-center w-full py-2 px-1 text-sm text-gray-700 hover:text-indigo-600 hover:bg-gray-50 rounded">
                           <HelpCircle className="h-4 w-4 mr-2" />
                           Help Center
-                        </button>
+                        </button>*/}
                         <button className="flex items-center w-full py-2 px-1 text-sm text-red-600 hover:text-red-800 hover:bg-red-50 rounded">
                           <LogOut className="h-4 w-4 mr-2" />
                           Sign Out
@@ -516,7 +458,7 @@ const AdminDashboard = () => {
             >
               Dashboard
             </button>
-            <button
+           {/* <button
               onClick={() => setSelectedTab('students')}
               className={`py-4 px-1 text-sm font-medium ${
                 selectedTab === 'students' 
@@ -525,7 +467,7 @@ const AdminDashboard = () => {
               }`}
             >
               Student Enrollments
-            </button>
+            </button>*/}
           </nav>
         </div>
 

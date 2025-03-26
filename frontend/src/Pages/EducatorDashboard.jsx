@@ -1,8 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import axios from "axios";
+import { useParams,useNavigate } from 'react-router-dom';
 
+const TeacherDashboard = () => {
 
-const EducatorDashboard = () => {
+  const { id } = useParams();
+  const navigate = useNavigate();
+  const [teacherData, setTeacherData] = useState(null)
+  const [studentsByCourse, setStudentsByCourse] = useState([]);
+  const [selectedCourseId, setSelectedCourseId] = useState(null);
   const [activeTab, setActiveTab] = useState('schedule');
   const [showNotifications, setShowNotifications] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
@@ -13,76 +19,116 @@ const EducatorDashboard = () => {
   const [noteText, setNoteText] = useState('');
   const [progressValue, setProgressValue] = useState(0);
   const [newPhoto, setNewPhoto] = useState(null);
-  
-  const [teacherData, setTeacherData] = useState(null);
+  const [selectedCourse, setSelectedCourse] = useState(null);
+  const [attendanceData, setAttendanceData] = useState({});
+  const [selectMode, setSelectMode] = useState(false);
+  const [selectedDates, setSelectedDates] = useState([]);
 
+  // Mock teacher data
   useEffect(() => {
-    const fetchEducatorProfile = async () => {
+    // Fetch educator data from the backend
+    const fetchEducatorData = async () => {
       try {
-        const token = localStorage.getItem("authToken");
-        const API = import.meta.env.VITE_API_BASE_URL;
-  
-        const response = await axios.get(`${API}/educator-dashboard`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-  
-        setTeacherData({
-          name: response.data.name,
-          subject: response.data.designation,
-          email: response.data.email,
-          phone: response.data.phone,
-          department: response.data.department,
-          joinDate: new Date(response.data.date_of_joining).toLocaleDateString(),
-          profilePic: response.data.photo_url,
-          programList: response.data.program, // save it if needed
-        });
-      } catch (error) {
-        console.error("Failed to fetch educator profile", error);
+        const API = `http://localhost:8000/view-educator/${id}`;
+        const response = await axios.get(API);
+        const educatorData = response.data;
+
+        setTeacherData(educatorData); // Update state with fetched educator data
+
+        // Automatically fetch students for the first course
+        console.log(educatorData.course_id)
+
+        const firstCourse = educatorData.course_id;
+
+        setSelectedCourse(firstCourse); // Set the first course as selected
+        fetchStudentsByCourse(firstCourse); // Fetch students for the first course
+
+
+        setIsLoading(false); // Set loading to false
+      } catch (err) {
+        console.error('Error fetching educator data:', err);
+        setError('Failed to load educator data. Please try again later.');
+        setIsLoading(false); // Set loading to false
       }
     };
-  
-    fetchEducatorProfile();
-  }, []);
-  
-  
+
+    fetchEducatorData();
+  }, [id]);
+  const fetchStudentsByCourse = async (courseId) => {
+    try {
+      const API = `http://localhost:8000/students-in-course/${courseId}`;
+      const response = await axios.get(API);
+      setStudentsByCourse(response.data); // Update state with fetched students
+    } catch (err) {
+      console.error('Error fetching students by course:', err);
+      alert('Failed to fetch students for this course. Please try again later.');
+    }
+  };
+  const calculateAverage = (examRecord) => {
+    console.log("Exam Record:", examRecord); // Debugging log
+    if (!examRecord || examRecord.length === 0) return "N/A"; // Handle cases with no exams
+    const totalMarks = examRecord.reduce((sum, exam) => {
+      console.log("Exam Record:", exam); // Debugging log
+      return sum + (exam.marks_obtained || 0);
+    }, 0);
+    return (totalMarks / examRecord.length).toFixed(2); // Return average with 2 decimal places
+  };
+  const calculateAttendence = (attendanceRecord) => {
+    if (!attendanceRecord || attendanceRecord.length === 0) return "N/A"; // Handle cases with no attendance
+
+    // Count the total sessions and the number of "present" sessions
+    const totalSessions = attendanceRecord.length;
+    const presentSessions = attendanceRecord.filter((session) => session.status === "present").length;
+
+    // Calculate and return the attendance percentage
+    return `${((presentSessions / totalSessions) * 100).toFixed(2)}%`; // Return attendance percentage
+  };
   // Mock schedule data
   const scheduleData = [
-    { day: "Monday", periods: [
-      { time: "09:00 - 10:30", class: "Algebra I", room: "204" },
-      { time: "11:00 - 12:30", class: "Pre-Calculus", room: "210" },
-      { time: "14:00 - 15:30", class: "Mentoring Hours", room: "Office" }
-    ]},
-    { day: "Tuesday", periods: [
-      { time: "08:00 - 09:30", class: "Geometry", room: "208" },
-      { time: "10:00 - 11:30", class: "Algebra II", room: "204" },
-      { time: "13:00 - 14:30", class: "Department Meeting", room: "Staff Room" }
-    ]},
-    { day: "Wednesday", periods: [
-      { time: "09:00 - 10:30", class: "Algebra I", room: "204" },
-      { time: "11:00 - 12:30", class: "Pre-Calculus", room: "210" },
-      { time: "14:00 - 15:30", class: "Student Consultation", room: "Office" }
-    ]},
-    { day: "Thursday", periods: [
-      { time: "08:00 - 09:30", class: "Geometry", room: "208" },
-      { time: "10:00 - 11:30", class: "Algebra II", room: "204" },
-      { time: "13:00 - 14:30", class: "Professional Development", room: "Library" }
-    ]},
-    { day: "Friday", periods: [
-      { time: "09:00 - 10:30", class: "Algebra I", room: "204" },
-      { time: "11:00 - 12:30", class: "Math Club", room: "210" },
-      { time: "14:00 - 15:00", class: "Faculty Meeting", room: "Auditorium" }
-    ]}
+    {
+      day: "Monday", periods: [
+        { time: "09:00 - 10:30", class: "Algebra I", room: "204" },
+        { time: "11:00 - 12:30", class: "Pre-Calculus", room: "210" },
+        { time: "14:00 - 15:30", class: "Mentoring Hours", room: "Office" }
+      ]
+    },
+    {
+      day: "Tuesday", periods: [
+        { time: "08:00 - 09:30", class: "Geometry", room: "208" },
+        { time: "10:00 - 11:30", class: "Algebra II", room: "204" },
+        { time: "13:00 - 14:30", class: "Department Meeting", room: "Staff Room" }
+      ]
+    },
+    {
+      day: "Wednesday", periods: [
+        { time: "09:00 - 10:30", class: "Algebra I", room: "204" },
+        { time: "11:00 - 12:30", class: "Pre-Calculus", room: "210" },
+        { time: "14:00 - 15:30", class: "Student Consultation", room: "Office" }
+      ]
+    },
+    {
+      day: "Thursday", periods: [
+        { time: "08:00 - 09:30", class: "Geometry", room: "208" },
+        { time: "10:00 - 11:30", class: "Algebra II", room: "204" },
+        { time: "13:00 - 14:30", class: "Professional Development", room: "Library" }
+      ]
+    },
+    {
+      day: "Friday", periods: [
+        { time: "09:00 - 10:30", class: "Algebra I", room: "204" },
+        { time: "11:00 - 12:30", class: "Math Club", room: "210" },
+        { time: "14:00 - 15:00", class: "Faculty Meeting", room: "Auditorium" }
+      ]
+    }
   ];
-  
+
   // Mock student data
   const [studentData, setStudentData] = useState([
-    { 
-      id: "S1001", 
-      name: "Alex Kim", 
-      grade: "10th", 
-      progress: 85, 
+    {
+      id: "S1001",
+      name: "Alex Kim",
+      grade: "10th",
+      progress: 85,
       attendance: "95%",
       homeworkStatus: [
         { title: "Quadratic Equations", status: "Completed", grade: "A" },
@@ -91,11 +137,11 @@ const EducatorDashboard = () => {
       ],
       notes: "Excellent at problem-solving but needs to work on showing steps clearly."
     },
-    { 
-      id: "S1025", 
-      name: "Jamie Rodriguez", 
-      grade: "9th", 
-      progress: 72, 
+    {
+      id: "S1025",
+      name: "Jamie Rodriguez",
+      grade: "9th",
+      progress: 72,
       attendance: "88%",
       homeworkStatus: [
         { title: "Quadratic Equations", status: "Completed", grade: "C" },
@@ -104,11 +150,11 @@ const EducatorDashboard = () => {
       ],
       notes: "Struggling with algebraic concepts. Consider additional tutoring."
     },
-    { 
-      id: "S1042", 
-      name: "Taylor Smith", 
-      grade: "10th", 
-      progress: 93, 
+    {
+      id: "S1042",
+      name: "Taylor Smith",
+      grade: "10th",
+      progress: 93,
       attendance: "98%",
       homeworkStatus: [
         { title: "Quadratic Equations", status: "Completed", grade: "A+" },
@@ -117,11 +163,11 @@ const EducatorDashboard = () => {
       ],
       notes: "Exceptional student. Consider advanced placement for next term."
     },
-    { 
-      id: "S1103", 
-      name: "Morgan Chen", 
-      grade: "9th", 
-      progress: 78, 
+    {
+      id: "S1103",
+      name: "Morgan Chen",
+      grade: "9th",
+      progress: 78,
       attendance: "92%",
       homeworkStatus: [
         { title: "Quadratic Equations", status: "Completed", grade: "B" },
@@ -131,7 +177,7 @@ const EducatorDashboard = () => {
       notes: "Consistent work. Participates well in group activities."
     }
   ]);
-  
+
   // Mock notifications
   const [notifications, setNotifications] = useState([
     { id: 1, message: "Schedule change: Professional Development moved to Friday", time: "2 hours ago", isNew: true },
@@ -139,27 +185,86 @@ const EducatorDashboard = () => {
     { id: 3, message: "Reminder: Submit Q1 grades by Friday", time: "2 days ago", isNew: false },
     { id: 4, message: "Department meeting rescheduled to 3 PM", time: "3 days ago", isNew: false }
   ]);
-  
+
+
+  const coursesData = [
+    {
+      id: "MATH101",
+      name: "Algebra I",
+      semester: "Spring 2025",
+      students: [
+        {
+          studentId: "S1001",
+          name: "Alex Kim",
+          grade: "10th",
+          attendance: {
+            "2025-03-25": false,
+            "2025-03-26": false,
+            "2025-03-27": false
+          }
+        },
+        {
+          studentId: "S1025",
+          name: "Jamie Rodriguez",
+          grade: "9th",
+          attendance: {
+            "2025-03-25": false,
+            "2025-03-26": false,
+            "2025-03-27": false
+          }
+        },
+        {
+          studentId: "S1042",
+          name: "Taylor Smith",
+          grade: "10th",
+          attendance: {
+            "2025-03-25": false,
+            "2025-03-26": false,
+            "2025-03-27": false
+          }
+        }
+      ]
+    },
+    {
+      id: "MATH201",
+      name: "Geometry",
+      semester: "Spring 2025",
+      students: [
+        {
+          studentId: "S1103",
+          name: "Morgan Chen",
+          grade: "9th",
+          attendance: {
+            "2025-03-25": false,
+            "2025-03-26": false,
+            "2025-03-27": false
+          }
+        }
+      ]
+    }
+  ];
+
   // Handle search functionality
-  const filteredStudents = searchQuery 
-    ? studentData.filter(student => 
-        student.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-        student.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        student.grade.toLowerCase().includes(searchQuery.toLowerCase())
-      )
+  const filteredStudents = searchQuery
+    ? studentData.filter(student =>
+      student.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      student.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      student.grade.toLowerCase().includes(searchQuery.toLowerCase())
+    )
     : studentData;
-  
+
   // Handle view details click
   const handleViewDetails = (studentId) => {
-    setSelectedStudentId(studentId === selectedStudentId ? null : studentId);
+    console.log(studentId);
+    navigate(`/student-dashboard/${studentId}`);
   };
-  
+
   // Handle add note
   const handleAddNote = (studentId) => {
     setSelectedStudentId(studentId);
     setShowAddNoteModal(true);
   };
-  
+
   // Handle update progress
   const handleUpdateProgress = (studentId) => {
     const student = studentData.find(s => s.id === studentId);
@@ -167,11 +272,11 @@ const EducatorDashboard = () => {
     setProgressValue(student.progress);
     setShowUpdateProgressModal(true);
   };
-  
+
   // Save note
   const saveNote = () => {
     if (noteText.trim() === '') return;
-    
+
     setStudentData(studentData.map(student => {
       if (student.id === selectedStudentId) {
         return {
@@ -181,11 +286,11 @@ const EducatorDashboard = () => {
       }
       return student;
     }));
-    
+
     setNoteText('');
     setShowAddNoteModal(false);
   };
-  
+
   // Save progress
   const saveProgress = () => {
     setStudentData(studentData.map(student => {
@@ -197,25 +302,25 @@ const EducatorDashboard = () => {
       }
       return student;
     }));
-    
+
     setShowUpdateProgressModal(false);
   };
-  
+
   // Handle student request acceptance
   const handleAcceptRequest = () => {
     // Add Emily Parker to student list
     const newStudent = {
-      id: "S1167", 
-      name: "Emily Parker", 
-      grade: "9th", 
-      progress: 0, 
+      id: "S1167",
+      name: "Emily Parker",
+      grade: "9th",
+      progress: 0,
       attendance: "0%",
       homeworkStatus: [],
       notes: "New transfer from Wilson Middle School."
     };
-    
+
     setStudentData([...studentData, newStudent]);
-    
+
     // Add confirmation notification
     const newNotification = {
       id: Date.now(),
@@ -223,13 +328,13 @@ const EducatorDashboard = () => {
       time: "Just now",
       isNew: true
     };
-    
+
     setNotifications([newNotification, ...notifications]);
-    
+
     // Show success message (could be a toast in a real app)
     alert("Student Emily Parker has been successfully added to your roster");
   };
-  
+
   // Handle photo update
   const handlePhotoUpdate = () => {
     // In a real app, you would upload the photo to a server
@@ -237,7 +342,44 @@ const EducatorDashboard = () => {
     alert("Photo updated successfully!");
     setNewPhoto(null);
   };
-  
+
+  // Handle attendance toggle
+  const handleBulkAttendanceToggle = (courseId, studentId) => {
+    // If no dates selected, do nothing
+    if (selectedDates.length === 0) return;
+
+    setAttendanceData(prev => {
+      const newAttendance = { ...prev };
+
+      // Ensure nested objects exist
+      if (!newAttendance[courseId]) {
+        newAttendance[courseId] = {};
+      }
+      if (!newAttendance[courseId][studentId]) {
+        newAttendance[courseId][studentId] = {};
+      }
+
+      // Toggle attendance for all selected dates
+      selectedDates.forEach(date => {
+        newAttendance[courseId][studentId][date] =
+          !(newAttendance[courseId][studentId][date] || false);
+      });
+
+      return newAttendance;
+    });
+
+    // Reset selection after bulk update
+    setSelectedDates([]);
+    setSelectMode(false);
+  };
+  const toggleDateSelection = (date) => {
+    setSelectedDates(prev =>
+      prev.includes(date)
+        ? prev.filter(d => d !== date)
+        : [...prev, date]
+    );
+  };
+
   const renderSchedule = () => {
     return (
       <div className="bg-white rounded-lg shadow-md overflow-hidden">
@@ -275,7 +417,7 @@ const EducatorDashboard = () => {
       </div>
     );
   };
-  
+
   const renderStudents = () => {
     return (
       <div className="space-y-6">
@@ -303,36 +445,24 @@ const EducatorDashboard = () => {
                 <tr>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Grade</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Progress</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Gender</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Average</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Attendance</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {filteredStudents.map((student) => (
+                {studentsByCourse.map((student) => (
+                  // console.log(student),
                   <tr key={student.id}>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{student.id}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{student.student_id}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{student.name}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{student.grade}</td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="w-full bg-gray-200 rounded-full h-2.5">
-                        <div 
-                          className={`h-2.5 rounded-full ${
-                            student.progress >= 90 ? 'bg-green-600' : 
-                            student.progress >= 75 ? 'bg-blue-600' : 
-                            student.progress >= 60 ? 'bg-yellow-500' : 'bg-red-600'
-                          }`} 
-                          style={{ width: `${student.progress}%` }}
-                        ></div>
-                      </div>
-                      <span className="text-xs text-gray-500 mt-1">{student.progress}%</span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{student.attendance}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{student.gender}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{calculateAverage(student.examResult)}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{calculateAttendence(student.attendence)}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                      <button 
+                      <button
                         className="text-blue-600 hover:text-blue-900"
-                        onClick={() => handleViewDetails(student.id)}
+                        onClick={() => handleViewDetails(student.student_id)}
                       >
                         View Details
                       </button>
@@ -343,69 +473,13 @@ const EducatorDashboard = () => {
             </table>
           </div>
         </div>
-        
+
         {/* Student Details Section */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {filteredStudents
-            .filter(student => selectedStudentId ? student.id === selectedStudentId : true)
-            .map((student) => (
-            <div key={student.id} className="bg-white rounded-lg shadow-md overflow-hidden">
-              <div className="p-4 bg-blue-50 border-b border-blue-100 flex justify-between items-center">
-                <h3 className="text-lg font-semibold text-blue-800">{student.name} - {student.id}</h3>
-                <span className={`px-2 py-1 text-xs rounded-full ${
-                  student.progress >= 90 ? 'bg-green-100 text-green-800' : 
-                  student.progress >= 75 ? 'bg-blue-100 text-blue-800' : 
-                  student.progress >= 60 ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800'
-                }`}>
-                  Progress: {student.progress}%
-                </span>
-              </div>
-              <div className="p-4">
-                <h4 className="font-medium text-gray-900 mb-2">Homework Status</h4>
-                <div className="space-y-2 mb-4">
-                  {student.homeworkStatus.map((hw, idx) => (
-                    <div key={idx} className="flex justify-between items-center p-2 bg-gray-50 rounded">
-                      <span className="text-sm font-medium">{hw.title}</span>
-                      <div className="flex items-center space-x-4">
-                        <span className={`text-xs px-2 py-1 rounded ${
-                          hw.status === 'Completed' ? 'bg-green-100 text-green-800' : 
-                          hw.status === 'Pending' ? 'bg-yellow-100 text-yellow-800' : 
-                          hw.status === 'In Progress' ? 'bg-blue-100 text-blue-800' : 
-                          'bg-red-100 text-red-800'
-                        }`}>
-                          {hw.status}
-                        </span>
-                        {hw.grade !== '-' && <span className="text-sm font-medium">{hw.grade}</span>}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-                <div className="mt-4">
-                  <h4 className="font-medium text-gray-900 mb-2">Notes</h4>
-                  <p className="text-sm text-gray-600 bg-gray-50 p-3 rounded whitespace-pre-line">{student.notes}</p>
-                </div>
-                <div className="mt-4 flex justify-end space-x-2">
-                  <button 
-                    className="px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700"
-                    onClick={() => handleAddNote(student.id)}
-                  >
-                    Add Note
-                  </button>
-                  <button 
-                    className="px-3 py-1 bg-gray-600 text-white text-sm rounded hover:bg-gray-700"
-                    onClick={() => handleUpdateProgress(student.id)}
-                  >
-                    Update Progress
-                  </button>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
+        
       </div>
     );
   };
-  
+
   const renderCommunications = () => {
     return (
       <div className="space-y-6">
@@ -429,7 +503,7 @@ const EducatorDashboard = () => {
             ))}
           </div>
         </div>
-        
+
         <div className="bg-white rounded-lg shadow-md overflow-hidden">
           <div className="p-4 bg-blue-50 border-b border-blue-100">
             <h3 className="text-lg font-semibold text-blue-800">New Student Requests</h3>
@@ -443,13 +517,13 @@ const EducatorDashboard = () => {
                   <p className="text-sm text-gray-500 mt-1">Requested on: March 20, 2025</p>
                 </div>
                 <div className="flex space-x-2">
-                  <button 
+                  <button
                     className="px-3 py-1 bg-green-600 text-white text-sm rounded hover:bg-green-700"
                     onClick={handleAcceptRequest}
                   >
                     Accept
                   </button>
-                  <button 
+                  <button
                     className="px-3 py-1 bg-gray-600 text-white text-sm rounded hover:bg-gray-700"
                     onClick={() => alert("Discussion thread opened with administration")}
                   >
@@ -458,7 +532,7 @@ const EducatorDashboard = () => {
                 </div>
               </div>
             </div>
-            
+
             <div className="p-4 mb-3 rounded-lg border border-green-200 bg-green-50">
               <div className="flex justify-between items-start">
                 <div>
@@ -467,7 +541,7 @@ const EducatorDashboard = () => {
                   <p className="text-sm text-gray-500 mt-1">Effective from: April 1, 2025</p>
                 </div>
                 <div>
-                  <button 
+                  <button
                     className="px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700"
                     onClick={() => alert("Viewing schedule adjustment details")}
                   >
@@ -481,139 +555,99 @@ const EducatorDashboard = () => {
       </div>
     );
   };
-  
+
   const renderProfile = () => {
-    try {
-      if (!teacherData) {
-        return (
-          <div className="bg-white rounded-lg shadow-md overflow-hidden">
-            <div className="p-4 bg-blue-50 border-b border-blue-100">
-              <h3 className="text-lg font-semibold text-blue-800">Educator Profile</h3>
+    return (
+      <div className="bg-white rounded-lg shadow-md overflow-hidden">
+        <div className="p-4 bg-blue-50 border-b border-blue-100">
+          <h3 className="text-lg font-semibold text-blue-800">Educator Profile</h3>
+        </div>
+        <div className="p-6">
+          <div className="flex flex-col md:flex-row items-center md:items-start gap-6">
+            <div className="flex-shrink-0">
+
+
             </div>
-            <div className="p-6 text-gray-500 text-center">
-              Loading educator profile...
-            </div>
-          </div>
-        );
-      }
-  
-      return (
-        <div className="bg-white rounded-lg shadow-md overflow-hidden">
-          <div className="p-4 bg-blue-50 border-b border-blue-100">
-            <h3 className="text-lg font-semibold text-blue-800">Educator Profile</h3>
-          </div>
-          <div className="p-6">
-            <div className="flex flex-col md:flex-row items-center md:items-start gap-6">
-              <div className="flex-shrink-0">
-                <img 
-                  src={teacherData?.profilePic || "/default-avatar.png"} 
-                  alt={teacherData?.name || "Educator"} 
-                  className="w-32 h-32 rounded-full border-4 border-blue-100"
-                />
-                <div className="mt-2">
-                  <label htmlFor="photo-upload" className="cursor-pointer text-sm text-blue-600 hover:text-blue-800">
-                    Update Photo
-                  </label>
-                  <input 
-                    id="photo-upload" 
-                    type="file" 
-                    className="hidden" 
-                    accept="image/*"
-                    onChange={(e) => setNewPhoto(e.target.files[0])}
-                  />
-                  {newPhoto && (
-                    <div className="mt-2">
-                      <button 
-                        className="text-sm bg-blue-600 text-white px-2 py-1 rounded"
-                        onClick={handlePhotoUpdate}
-                      >
-                        Save Photo
-                      </button>
-                    </div>
-                  )}
-                </div>
+
+            <div className="flex-1 space-y-4">
+              <div>
+                <h2 className="text-2xl font-bold text-gray-900">{teacherData.name}</h2>
+                <h2 className="text-1xl text-gray-600">{teacherData.id}</h2>
+                <p className="text-lg text-blue-600">{teacherData.subject} Educator</p>
               </div>
-              
-              <div className="flex-1 space-y-4">
-                <div>
-                  <h2 className="text-2xl font-bold text-gray-900">{teacherData?.name}</h2>
-                  <p className="text-lg text-blue-600">{teacherData?.subject || 'Educator'}</p>
-                </div>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-3">
-                    <div>
-                      <h4 className="text-sm font-medium text-gray-500">Email</h4>
-                      <p className="text-gray-900">{teacherData?.email || "Not available"}</p>
-                    </div>
-                    <div>
-                      <h4 className="text-sm font-medium text-gray-500">Phone</h4>
-                      <p className="text-gray-900">{teacherData?.phone || "Not available"}</p>
-                    </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-3">
+                  <div>
+                    <h4 className="text-sm font-medium text-gray-500">Email</h4>
+                    <p className="text-gray-900">{teacherData.email}</p>
                   </div>
-                  
-                  <div className="space-y-3">
-                    <div>
-                      <h4 className="text-sm font-medium text-gray-500">Department</h4>
-                      <p className="text-gray-900">{teacherData?.department || "Not specified"}</p>
-                    </div>
-                    <div>
-                      <h4 className="text-sm font-medium text-gray-500">Joined</h4>
-                      <p className="text-gray-900">{teacherData?.joinDate || "Unknown"}</p>
-                    </div>
+                  <div>
+                    <h4 className="text-sm font-medium text-gray-500">Phone</h4>
+                    <p className="text-gray-900">{teacherData.phone}</p>
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-medium text-gray-500">Course ID</h4>
+                    <p className="text-gray-900">{teacherData.course_id}</p>
                   </div>
                 </div>
-                
-                <div className="pt-4 border-t border-gray-200">
-                  <h4 className="text-sm font-medium text-gray-500 mb-2">Programs</h4>
-                  <ul className="list-disc pl-5 text-gray-700 space-y-1">
-                    {(teacherData?.programList || []).map((program, index) => (
-                      <li key={index}>{program}</li>
-                    ))}
-                  </ul>
+                <div className="space-y-3">
+                  <div>
+                    <h4 className="text-sm font-medium text-gray-500">Address</h4>
+                    <p className="text-gray-900">{teacherData.address}</p>
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-medium text-gray-500">Date of Birth</h4>
+                    <p className="text-gray-900">{teacherData.dob}</p>
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-medium text-gray-500">Joined</h4>
+                    <p className="text-gray-900">{teacherData.joinDate}</p>
+                  </div>
                 </div>
-                
-                <div className="pt-4 border-t border-gray-200">
-                  <button 
-                    className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-                    onClick={() => alert("Profile edit mode activated")}
-                  >
-                    Edit Profile
-                  </button>
-                </div>
+
+
+
+              </div>
+
+              <div className="pt-4 border-t border-gray-200">
+                <h4 className="text-sm font-medium text-gray-500 mb-2">Qualifications & Certifications</h4>
+                <ul className="list-disc pl-5 text-gray-700 space-y-1">
+                  <li>M.S. Mathematics Education, State University (2019)</li>
+                  <li>B.S. Mathematics, National University (2016)</li>
+                  <li>State Teaching Certification - Advanced Mathematics</li>
+                  <li>AP Calculus Certified Instructor</li>
+                </ul>
+              </div>
+
+              <div className="pt-4 border-t border-gray-200">
+
               </div>
             </div>
           </div>
         </div>
-      );
-    } catch (err) {
-      console.error("Error rendering profile:", err);
-      return (
-        <div className="p-4 text-red-600">
-          Failed to load profile. Please try again later.
-        </div>
-      );
-    }
-  };  
-  
+      </div>
+    );
+  };
+
   // Add Note Modal
   const renderAddNoteModal = () => {
     if (!showAddNoteModal) return null;
-    
+
     const student = studentData.find(s => s.id === selectedStudentId);
-    
+
     return (
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
         <div className="bg-white rounded-lg p-6 w-full max-w-md">
           <h3 className="text-lg font-semibold mb-4">Add Note for {student?.name}</h3>
-          <textarea 
+          <textarea
             className="w-full p-2 border border-gray-300 rounded mb-4 h-32"
             placeholder="Enter your note here..."
             value={noteText}
             onChange={(e) => setNoteText(e.target.value)}
           ></textarea>
           <div className="flex justify-end space-x-2">
-            <button 
+            <button
               className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600"
               onClick={() => {
                 setShowAddNoteModal(false);
@@ -622,7 +656,7 @@ const EducatorDashboard = () => {
             >
               Cancel
             </button>
-            <button 
+            <button
               className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
               onClick={saveNote}
             >
@@ -633,13 +667,13 @@ const EducatorDashboard = () => {
       </div>
     );
   };
-  
+
   // Update Progress Modal
   const renderUpdateProgressModal = () => {
     if (!showUpdateProgressModal) return null;
-    
+
     const student = studentData.find(s => s.id === selectedStudentId);
-    
+
     return (
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
         <div className="bg-white rounded-lg p-6 w-full max-w-md">
@@ -648,23 +682,23 @@ const EducatorDashboard = () => {
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Progress Percentage: {progressValue}%
             </label>
-            <input 
-              type="range" 
-              min="0" 
-              max="100" 
+            <input
+              type="range"
+              min="0"
+              max="100"
               value={progressValue}
               onChange={(e) => setProgressValue(parseInt(e.target.value))}
               className="w-full"
             />
           </div>
           <div className="flex justify-end space-x-2">
-            <button 
+            <button
               className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600"
               onClick={() => setShowUpdateProgressModal(false)}
             >
               Cancel
             </button>
-            <button 
+            <button
               className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
               onClick={saveProgress}
             >
@@ -675,48 +709,15 @@ const EducatorDashboard = () => {
       </div>
     );
   };
-  
+
   // Profile Menu
   // Continuation of renderProfileMenu function
-const renderProfileMenu = () => {
-    if (!showProfileMenu) return null;
-    
-    return (
-      <div className="origin-top-right absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-10">
-        <div className="py-1">
-          <a href="#" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" onClick={() => {
-            setActiveTab('profile');
-            setShowProfileMenu(false);
-          }}>
-            My Profile
-          </a>
-          <a href="#" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" onClick={() => {
-            setShowProfileMenu(false);
-            alert("Settings page would open here");
-          }}>
-            Settings
-          </a>
-          <a href="#" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" onClick={() => {
-            setShowProfileMenu(false);
-            alert("Help center would open here");
-          }}>
-            Help Center
-          </a>
-          <a href="#" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" onClick={() => {
-            setShowProfileMenu(false);
-            alert("You would be logged out here");
-          }}>
-            Sign out
-          </a>
-        </div>
-      </div>
-    );
-  };
-  
+
+
   // Notification Menu
   const renderNotificationsMenu = () => {
     if (!showNotifications) return null;
-    
+
     return (
       <div className="origin-top-right absolute right-0 mt-2 w-80 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-10">
         <div className="py-2 px-4 border-b border-gray-100">
@@ -724,9 +725,9 @@ const renderProfileMenu = () => {
         </div>
         <div className="max-h-80 overflow-y-auto">
           {notifications.map(notification => (
-            <a 
+            <a
               key={notification.id}
-              href="#" 
+              href="#"
               className={`block px-4 py-3 border-b border-gray-100 hover:bg-gray-50 ${notification.isNew ? 'bg-blue-50' : ''}`}
             >
               <p className="text-sm text-gray-700">{notification.message}</p>
@@ -742,7 +743,136 @@ const renderProfileMenu = () => {
       </div>
     );
   };
-  
+
+  // Render Courses Tab
+  const renderCourses = () => {
+    // If no course is selected, show course list  
+    // If a course is selected, show course details and student list
+    return (
+      <div className="bg-white rounded-lg shadow-md overflow-hidden">
+        <div className="p-4 bg-blue-50 border-b border-blue-100 flex justify-between items-center">
+          <div>
+            <h3 className="text-lg font-semibold text-blue-800">{selectedCourse.name}</h3>
+            <p className="text-sm text-gray-600">Course ID: {selectedCourse.id}</p>
+          </div>
+          <button
+            className="text-sm text-blue-600 hover:text-blue-800"
+            onClick={() => setSelectedCourse(null)}
+          >
+            Back to Courses
+          </button>
+        </div>
+
+        <div className="p-4">
+          <h4 className="font-semibold text-gray-900 mb-4">Student Attendance</h4>
+
+          {/* Bulk selection toggle */}
+          <div className="mb-4 flex items-center space-x-2">
+            <input
+              type="checkbox"
+              checked={selectMode}
+              onChange={() => setSelectMode(!selectMode)}
+              className="form-checkbox h-5 w-5 text-blue-600"
+            />
+            <span>Enable Bulk Selection</span>
+
+            {selectMode && selectedDates.length > 0 && (
+              <button
+                onClick={() => {
+                  const confirmBulk = window.confirm(`Apply attendance for ${selectedDates.length} selected dates?`);
+                  if (confirmBulk) {
+                    selectedCourse.students.forEach(student =>
+                      selectedDates.forEach(date =>
+                        handleAttendanceToggle(selectedCourse.id, student.studentId, date)
+                      )
+                    );
+                    // Reset selection after bulk apply
+                    setSelectedDates([]);
+                  }
+                }}
+                className="ml-4 px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700"
+              >
+                Apply ({selectedDates.length} dates)
+              </button>
+            )}
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Student ID</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Grade</th>
+                  {['2025-03-25', '2025-03-26', '2025-03-27'].map((date) => (
+                    <th
+                      key={date}
+                      className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider"
+                    >
+                      {date}
+                      {selectMode && (
+                        <input
+                          type="checkbox"
+                          checked={selectedDates.includes(date)}
+                          onChange={() => {
+                            setSelectedDates(prev =>
+                              prev.includes(date)
+                                ? prev.filter(d => d !== date)
+                                : [...prev, date]
+                            );
+                          }}
+                          className="ml-2 form-checkbox h-4 w-4 text-blue-600"
+                        />
+                      )}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {selectedCourse.students.map((student) => (
+                  <tr key={student.studentId}>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{student.studentId}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{student.name}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{student.grade}</td>
+                    {['2025-03-25', '2025-03-26', '2025-03-27'].map((date) => (
+                      <td key={date} className="px-6 py-4 whitespace-nowrap text-center">
+                        <input
+                          type="checkbox"
+                          checked={
+                            attendanceData[selectedCourse.id] &&
+                            attendanceData[selectedCourse.id][student.studentId] &&
+                            attendanceData[selectedCourse.id][student.studentId][date]
+                          }
+                          onChange={() => {
+                            if (selectMode) {
+                              // Toggle date selection in bulk mode
+                              setSelectedDates(prev =>
+                                prev.includes(date)
+                                  ? prev.filter(d => d !== date)
+                                  : [...prev, date]
+                              );
+                            } else {
+                              // Normal single attendance toggle
+                              handleAttendanceToggle(
+                                selectedCourse.id,
+                                student.studentId,
+                                date
+                              );
+                            }
+                          }}
+                          className="form-checkbox h-5 w-5 text-blue-600"
+                        />
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    );
+  };
   // Main render function
   return (
     <div className="min-h-screen bg-gray-100">
@@ -751,81 +881,54 @@ const renderProfileMenu = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16">
             <div className="flex items-center">
-              <h1 className="text-xl font-bold text-blue-800">Educator Dashboard</h1>
+              <h1 className="text-xl font-bold text-blue-800">Teacher Dashboard</h1>
             </div>
             <div className="flex items-center space-x-4">
-              {/* Notifications */}
-              <div className="relative">
-                <button 
-                  className="p-1 rounded-full text-gray-600 hover:text-gray-900 focus:outline-none"
-                  onClick={() => {
-                    setShowNotifications(!showNotifications);
-                    setShowProfileMenu(false);
-                  }}
-                >
-                  <span className="sr-only">View notifications</span>
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-                  </svg>
-                  {notifications.some(n => n.isNew) && (
-                    <span className="absolute top-0 right-0 block h-2 w-2 rounded-full bg-red-500"></span>
-                  )}
-                </button>
-                {renderNotificationsMenu()}
-              </div>
-              
+
+
               {/* Profile dropdown */}
               <div className="relative ml-3">
-                <button 
+                <button
                   className="flex items-center space-x-2 text-sm focus:outline-none"
                   onClick={() => {
                     setShowProfileMenu(!showProfileMenu);
                     setShowNotifications(false);
                   }}
                 >
-                  {teacherData && (
-                    <img src={teacherData.profilePic || "/default-avatar.png"} 
-                    alt={teacherData.name || "Educator"} 
-                    className="h-8 w-8 rounded-full"
-                    />
-                  )}
-                  <span className="font-medium text-gray-700 hidden md:block">{teacherData?.name || "Loading..."}</span>
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
-                    <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
-                  </svg>
+
+                  {/* <span className="font-medium text-gray-700 hidden md:block">{teacherData.name}</span> */}
+
                 </button>
-                {renderProfileMenu()}
+
               </div>
             </div>
           </div>
         </div>
       </header>
-  
+
       {/* Navigation Tabs */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="border-b border-gray-200">
           <nav className="flex space-x-8">
             <button
-              className={`py-4 px-1 border-b-2 font-medium text-sm ${
-                activeTab === 'schedule' 
-                  ? 'border-blue-500 text-blue-600' 
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
+              className={`py-4 px-1 border-b-2 font-medium text-sm ${activeTab === 'schedule'
+                ? 'border-blue-500 text-blue-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
               onClick={() => setActiveTab('schedule')}
             >
               Schedule
             </button>
             <button
-              className={`py-4 px-1 border-b-2 font-medium text-sm ${
-                activeTab === 'students' 
-                  ? 'border-blue-500 text-blue-600' 
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
+              className={`py-4 px-1 border-b-2 font-medium text-sm ${activeTab === 'students'
+                ? 'border-blue-500 text-blue-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
               onClick={() => setActiveTab('students')}
             >
               Students
             </button>
-            <button
+            {/* <button
               className={`py-4 px-1 border-b-2 font-medium text-sm ${
                 activeTab === 'communications' 
                   ? 'border-blue-500 text-blue-600' 
@@ -834,21 +937,21 @@ const renderProfileMenu = () => {
               onClick={() => setActiveTab('communications')}
             >
               Communications
-            </button>
+            </button> */}
             <button
-              className={`py-4 px-1 border-b-2 font-medium text-sm ${
-                activeTab === 'profile' 
-                  ? 'border-blue-500 text-blue-600' 
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
+              className={`py-4 px-1 border-b-2 font-medium text-sm ${activeTab === 'profile'
+                ? 'border-blue-500 text-blue-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
               onClick={() => setActiveTab('profile')}
             >
               Profile
             </button>
+
           </nav>
         </div>
       </div>
-  
+
       {/* Main Content */}
       <main className="py-6">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -856,14 +959,15 @@ const renderProfileMenu = () => {
           {activeTab === 'students' && renderStudents()}
           {activeTab === 'communications' && renderCommunications()}
           {activeTab === 'profile' && renderProfile()}
+          {activeTab === 'courses' && renderCourses()}
         </div>
       </main>
-      
+
       {/* Modals */}
       {renderAddNoteModal()}
       {renderUpdateProgressModal()}
     </div>
   );
-  };
-  
-  export default EducatorDashboard;
+};
+
+export default TeacherDashboard;
