@@ -6,11 +6,13 @@ from typing import List, Optional, Literal, ForwardRef
 from enum import Enum
 from datetime import datetime, date, timedelta
 from pymongo import MongoClient
+from pymongo.errors import PyMongoError
 from bson import ObjectId
 from jose import JWTError, jwt
 from dotenv import load_dotenv
 import bcrypt
 import os
+import traceback
 
 # --------------------- Load Config ---------------------
 load_dotenv()
@@ -37,9 +39,10 @@ educators_collection = db["educators"]
 users_collection = db["users"]
 programs_collection = db["programs"]
 sessions_collection = db["sessions"]
-assessments_collection = db["assessments"] 
-employees_collection = db["employees"] 
+assessments_collection = db["assessments"]
+employees_collection = db["employees"]
 # enrollments_collection = db["enrollment_forms"]
+
 
 # --------------------- Enums ---------------------
 class Gender(str, Enum):
@@ -47,10 +50,12 @@ class Gender(str, Enum):
     FEMALE = "female"
     OTHER = "other"
 
+
 class Status(str, Enum):
     ACTIVE = "active"
     INACTIVE = "inactive"
     ENDED = "ended"
+
 
 class BloodGroup(str, Enum):
     A_POSITIVE = "A+"
@@ -62,28 +67,34 @@ class BloodGroup(str, Enum):
     AB_POSITIVE = "AB+"
     AB_NEGATIVE = "AB-"
 
+
 # --------------------- Utility ---------------------
 class PyObjectId(ObjectId):
     @classmethod
     def __get_validators__(cls):
         yield cls.validate
+
     @classmethod
     def validate(cls, v):
         if not ObjectId.is_valid(v):
             raise ValueError("Invalid ObjectId")
         return ObjectId(v)
 
+
 def hash_password(password: str) -> str:
     return bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
 
+
 def verify_password(plain_password, hashed_password) -> bool:
     return bcrypt.checkpw(plain_password.encode(), hashed_password.encode())
+
 
 def create_access_token(data: dict, expires_delta: timedelta = None):
     to_encode = data.copy()
     expire = datetime.utcnow() + (expires_delta or timedelta(minutes=15))
     to_encode.update({"exp": expire})
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+
 
 # --------------------- Weekly Assessment ---------------------
 # class WeeklyAssessment(BaseModel):
@@ -106,42 +117,54 @@ def create_access_token(data: dict, expires_delta: timedelta = None):
 EducatorRef = ForwardRef("Educator")
 StudentRef = ForwardRef("Student")
 
+
 class Educator(BaseModel):
-    educator_id: str
-    employee_id: str
+    id: str
     name: str
-    photo_url: Optional[str] = None
-    designation: str
+    role: str
     email: EmailStr
-    date_of_birth: date
+    dob: str
     phone: str
-    department: str
-    employment_type: str
-    blood_group: BloodGroup
-    program: List[str]  # ✅ multiple programs
+    course_id: str
+    joinDate: str
+    address: str
+    # program: Optional[List[str]]
+
 
 class Student(BaseModel):
     student_id: str
     name: str
-    photo_url: Optional[str] = None
-    gender: Gender
-    date_of_birth: date
-    primary_diagnosis: str
+    gender: str
+    father_name: str
+    mother_name: str
+    student_email: EmailStr
+    parent_email: EmailStr
+    contact_number: str
+    alt_contact_number: str
+    address: str
+    pincode: str
+    dob: str
+    course_id: str
+    blood_group: Optional[str] = None
     comorbidity: Optional[str] = None
-    enrollment_year: int
-    status: Status
-    email: EmailStr
-    fathers_name: str
-    mothers_name: str
-    program: List[str]  # ✅ multiple programs
-    educator_ids: List[str]  # ✅ multiple educators
+    udid: Optional[str] = None
+    diagnosis: str
+    allergies: Optional[str] = None
+    days_attending: List[str] = []
+    available_from: Optional[str] = None  # Assuming HH:MM format
+    available_until: Optional[str] = None
+    examResult: List[dict] = []
+    attendence: List[dict] = []
+
 
 class Session(BaseModel):
     session_id: Optional[str] = None
+    name: str
     date_timing: datetime
     duration: int
-    program: str
+    course_id: str
     educator_id: str  # linked to educator
+
 
 class Assessment(BaseModel):
     assessment_id: Optional[str] = None
@@ -154,6 +177,7 @@ class Assessment(BaseModel):
     educator_id: str
     student_id: str
 
+
 class Employee(BaseModel):
     employee_id: str
     name: str
@@ -165,13 +189,14 @@ class Employee(BaseModel):
     program: str
     email: EmailStr
     phone: str
-    date_of_birth: date
-    date_of_joining: date
+    date_of_birth: str
+    date_of_joining: str
     status: Status
     tenure: Optional[int] = None
     work_location: Optional[str] = None
     emergency_contact_number: str
     blood_group: BloodGroup
+
 
 # --------------------- Enrollment Form ---------------------
 class EnrollmentForm(BaseModel):
@@ -200,13 +225,23 @@ class EnrollmentForm(BaseModel):
 class UserRegister(BaseModel):
     email: EmailStr
     password: str
-    role: Literal["student", "educator", "admin"] 
+    role: Literal["student", "educator", "admin"]
     profile_id: str
 
 
 class Token(BaseModel):
     access_token: str
     token_type: str
+
+
+class Course(BaseModel):
+    course_id: str  # Unique identifier for the course
+    name: str  # Name of the course
+    description: str
+    duration: int  # Duration of the course in hours
+    educator_enrolled: List[str] = []  # ID of the educator teaching the course
+    students_enrolled: List[str] = []  # List of student IDs enrolled in the course
+    start_date: str  # Start date of the course
 
 
 # --------------------- Finalize forward refs ---------------------
@@ -216,6 +251,7 @@ Educator.update_forward_refs()
 
 # --------------------- OAuth2 & Auth Helpers ---------------------
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
+
 
 async def get_current_user(token: str = Depends(oauth2_scheme)):
     credentials_exception = HTTPException(
@@ -235,10 +271,12 @@ async def get_current_user(token: str = Depends(oauth2_scheme)):
     except JWTError:
         raise credentials_exception
 
+
 async def get_admin_user(current_user: dict = Depends(get_current_user)):
     if current_user["role"] != "admin":
         raise HTTPException(status_code=403, detail="Admin access required")
     return current_user
+
 
 def serialize(doc):
     doc["id"] = str(doc["_id"])
@@ -254,12 +292,14 @@ async def register_user(user: UserRegister):
         raise HTTPException(status_code=400, detail="User already exists")
 
     hashed_pw = hash_password(user.password)
-    users_collection.insert_one({
-        "email": user.email,
-        "password": hashed_pw,
-        "role": user.role,
-        "profile_id": user.profile_id
-    })
+    users_collection.insert_one(
+        {
+            "email": user.email,
+            "password": hashed_pw,
+            "role": user.role,
+            "profile_id": user.profile_id,
+        }
+    )
 
     return {"message": "User registered successfully"}
 
@@ -303,6 +343,7 @@ async def protected_route(current_user: dict = Depends(get_current_user)):
 def homepage():
     return {"message": "Welcome to Ishanya Foundation"}
 
+
 @app.get("/faqs")
 def get_faqs():
     return {
@@ -314,20 +355,376 @@ def get_faqs():
         ]
     }
 
-# --------------------- Dashboards ---------------------
-# @app.get("/student-dashboard/{student_id}")
-# async def student_dashboard(student_id: str):
-#     student = students_collection.find_one({"student_id": student_id})
-#     if not student:
-#         raise HTTPException(status_code=404, detail="Student not found")
-#     return serialize(student)
 
-# @app.get("/employee-dashboard/{employee_id}")
-# async def employee_dashboard(employee_id: str):
-#     educator = educators_collection.find_one({"employee_id": employee_id})
-#     if not educator:
-#         raise HTTPException(status_code=404, detail="Employee not found")
-#     return serialize(educator)
+# --------------------- Dashboards ---------------------
+# -------------------- Add Student API --------------------
+@app.post("/add-student/")
+async def add_student(student: Student):
+    student_data = student.dict(by_alias=True, exclude_none=True)
+
+    # Check if student already exists
+    if students_collection.find_one({"student_id": student.student_id}):
+        raise HTTPException(status_code=400, detail="Student already exists")
+
+    students_collection.insert_one(student_data)
+    return {"message": "Student added successfully"}
+
+
+@app.post("/add-session/")
+async def add_session(session: Session):
+    try:
+        # Check if the session already exists
+        existing_session = sessions_collection.find_one(
+            {"session_id": session.session_id}
+        )
+        if existing_session:
+            raise HTTPException(
+                status_code=400, detail="Session with this ID already exists"
+            )
+
+        # Insert the session into the database
+        session_data = session.dict()
+        sessions_collection.insert_one(session_data)
+        return {
+            "message": "Session added successfully",
+            "session_id": session.session_id,
+        }
+    except PyMongoError as e:
+        # Handle database-related errors
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail="Database error occurred")
+    except Exception as e:
+        # Handle unexpected errors
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail="An unexpected error occurred")
+
+
+@app.get("/view-session/{session_id}")
+async def view_session(session_id: str):
+    session = sessions_collection.find_one(
+        {"session_id": session_id}, {"_id": 0}
+    )  # Exclude MongoDB `_id`
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+    return session
+
+
+@app.get("/all-sessions/")
+async def view_all_sessions():
+    sessions = sessions_collection.find()  # Fetch all sessions from the database
+    session_list = []
+
+    for session in sessions:
+        session["_id"] = str(session["_id"])  # Convert ObjectId to string
+        session_list.append(session)
+
+    if not session_list:
+        raise HTTPException(status_code=404, detail="No sessions found")
+
+    return session_list
+
+
+@app.post("/add-course/")
+async def add_course(course: Course):
+    try:
+        # Check if the course already exists
+        existing_course = programs_collection.find_one({"course_id": course.course_id})
+        if existing_course:
+            raise HTTPException(
+                status_code=400, detail="Course with this ID already exists"
+            )
+
+        # Insert the course into the database
+        course_data = course.dict()
+        print("Check1")
+        programs_collection.insert_one(course_data)
+        print("Check2")
+        return {"message": "Course added successfully", "course_id": course.course_id}
+    except PyMongoError as e:
+        # Handle database-related errors
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail="Database error occurred")
+    except Exception as e:
+        # Handle unexpected errors
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail="An unexpected error occurred")
+
+
+@app.post("/mark-session-attendance/")
+async def mark_session_attendance(
+    student_id: str, session_id: str, status: Literal["present", "absent"]
+):
+    # Find the student by student_id
+    student = students_collection.find_one({"student_id": student_id})
+    if not student:
+        raise HTTPException(status_code=404, detail="Student not found")
+
+    # Find the session by session_id
+    session = sessions_collection.find_one({"session_id": session_id})
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+
+    # Check if attendance for the given session already exists
+    existing_attendance = next(
+        (
+            record
+            for record in student.get("attendence", [])
+            if record["session_id"] == session_id
+        ),
+        None,
+    )
+    if existing_attendance:
+        # Update the existing attendance record
+        existing_attendance["status"] = status
+        students_collection.update_one(
+            {"student_id": student_id}, {"$set": {"attendence": student["attendence"]}}
+        )
+    else:
+        # Add a new attendance record
+        new_attendance = {"session_id": session_id, "status": status}
+        students_collection.update_one(
+            {"student_id": student_id}, {"$push": {"attendence": new_attendance}}
+        )
+
+    return {
+        "message": f"Attendance for session {session_id} marked as {status} for student {student_id}"
+    }
+
+
+@app.post("/mark-assessment/")
+async def mark_assessment(student_id: str, session_id: str, marks_obtained: float):
+    # Find the student by student_id
+    student = students_collection.find_one({"student_id": student_id})
+    if not student:
+        raise HTTPException(status_code=404, detail="Student not found")
+
+    # Find the session by session_id
+    session = sessions_collection.find_one({"session_id": session_id})
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+
+    # Check if an assessment for the given session already exists
+    existing_assessment = next(
+        (
+            record
+            for record in student.get("examResult", [])
+            if record["session_id"] == session_id
+        ),
+        None,
+    )
+    if existing_assessment:
+        # Update the existing assessment record
+        existing_assessment["marks_obtained"] = marks_obtained
+        students_collection.update_one(
+            {"student_id": student_id}, {"$set": {"examResult": student["examResult"]}}
+        )
+    else:
+        # Add a new assessment record
+        new_assessment = {"session_id": session_id, "marks_obtained": marks_obtained}
+        students_collection.update_one(
+            {"student_id": student_id}, {"$push": {"examResult": new_assessment}}
+        )
+
+    return {
+        "message": f"Assessment for session {session_id} marked with {marks_obtained} marks for student {student_id}"
+    }
+
+
+@app.get("/all-courses/")
+async def view_all_courses():
+    courses = programs_collection.find()  # Fetch all courses from the database
+    course_list = []
+
+    for course in courses:
+        course["_id"] = str(course["_id"])  # Convert ObjectId to string
+        course_list.append(course)
+
+    if not course_list:
+        raise HTTPException(status_code=404, detail="No courses found")
+
+    return course_list
+
+
+@app.get("/students-in-course/{course_id}")
+async def get_students_in_course(course_id: str):
+    # Find the course by course_id
+    course = programs_collection.find_one({"course_id": course_id}, {"_id": 0})
+    if not course:
+        raise HTTPException(status_code=404, detail="Course not found")
+
+    # Fetch students enrolled in the course
+    students = students_collection.find({"course_id": course_id}, {"_id": 0})
+    student_list = list(students)
+
+    if not student_list:
+        raise HTTPException(
+            status_code=404, detail="No students enrolled in this course"
+        )
+
+    return {
+        "course_id": course_id,
+        "course_name": course.get("name"),
+        "students_enrolled": student_list,
+    }
+
+
+# -------------------- View Student API --------------------
+@app.get("/view-student/{student_id}")
+async def view_student(student_id: str):
+    # First get the student data
+    student = students_collection.find_one({"student_id": student_id}, {"_id": 0})
+    if not student:
+        raise HTTPException(status_code=404, detail="Student not found")
+
+    # If student has exam results, populate session data for each
+    if "examResult" in student and student["examResult"]:
+        exam_results = []
+        for result in student["examResult"]:
+            if "session_id" in result:
+                session = sessions_collection.find_one(
+                    {"session_id": result["session_id"]}, {"_id": 0}
+                )
+                if session:
+                    populated_result = result.copy()
+                    populated_result["session"] = session
+                    exam_results.append(populated_result)
+                else:
+                    exam_results.append(result)
+            else:
+                exam_results.append(result)
+        student["examResult"] = exam_results
+
+    if "attendence" in student and student["attendence"]:
+        attendance_records = []
+        for record in student["attendence"]:
+            if "session_id" in record:
+                session = sessions_collection.find_one(
+                    {"session_id": record["session_id"]}, {"_id": 0}
+                )
+                if session:
+                    populated_record = record.copy()
+                    populated_record["session"] = session
+                    attendance_records.append(populated_record)
+                else:
+                    attendance_records.append(record)
+            else:
+                attendance_records.append(record)
+        student["attendence"] = attendance_records
+
+    return student
+
+
+@app.get("/view-course/{course_id}")
+async def view_student(course_id: str):
+    student = programs_collection.find_one(
+        {"course_id": course_id}, {"_id": 0}
+    )  # Exclude MongoDB `_id`
+    if not student:
+        raise HTTPException(status_code=404, detail="Student not found")
+    return student
+
+
+@app.put("/update-course/{course_id}")
+async def update_course(course_id: str, updated_data: Course):
+    # Convert the updated data to a dictionary, excluding unset fields
+    update_data = updated_data.dict(exclude_unset=True)
+
+    # Update the course in the database
+    result = programs_collection.update_one(
+        {"course_id": course_id}, {"$set": update_data}
+    )
+
+    if result.matched_count == 0:
+        raise HTTPException(
+            status_code=404, detail="Course not found or no changes made"
+        )
+
+    return {"message": "Course updated successfully"}
+
+
+@app.delete("/delete-course/{course_id}")
+async def delete_course(course_id: str):
+    # Delete the course from the database
+    result = programs_collection.delete_one({"course_id": course_id})
+
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Course not found")
+
+    return {"message": "Course deleted successfully"}
+
+
+# -------------------- Update Student API --------------------
+# @app.put("/update-student/{student_id}")
+# async def update_student(student_id: str, updated_data: Student):
+#     # Convert the updated data to a dictionary, excluding unset fields
+#     update_data = updated_data.dict(exclude_unset=True, by_alias=True)
+    
+#     # Update the student in the database
+#     result = students_collection.update_one(
+#         {"student_id": student_id},
+#         {"$set": update_data}
+#     )
+
+#     if result.matched_count == 0:
+#         raise HTTPException(
+#             status_code=404, 
+#             detail="Student not found"
+#         )
+    
+#     if result.modified_count == 0:
+#         return {"message": "No changes made to student data"}
+    
+#     return {"message": "Student updated successfully"}
+
+@app.put("/update-student/{student_id}")
+async def update_student(student_id: str, updated_data: Student):
+    existing_student = students_collection.find_one({"student_id": student_id})
+
+    if not existing_student:
+        raise HTTPException(status_code=404, detail="Student not found")
+
+    # Merge existing data with updated data
+    updated_student = {**existing_student, **updated_data.dict(exclude_unset=True)}
+
+    # Ensure student_id remains the same
+    updated_student["student_id"] = student_id
+
+    # Update the record in the database
+    result = students_collection.replace_one({"student_id": student_id}, updated_student)
+
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Student not found")
+
+    return {"message": "Student updated successfully"}
+
+@app.put("/update-educator/{id}")
+async def update_educator(id: str, updated_data: Educator):
+    update_data = updated_data.dict(by_alias=True, exclude_none=True)
+    result = educators_collection.update_one({"id": id}, {"$set": update_data})
+
+    if result.modified_count == 0:
+        raise HTTPException(
+            status_code=404, detail="Student not found or no changes made"
+        )
+
+    return {"message": "Student updated successfully"}
+
+
+@app.post("/add-educator/")
+async def add_educator(educator: Educator):
+    existing_educator = educators_collection.find_one({"id": educator.id})
+    if existing_educator:
+        raise HTTPException(
+            status_code=400, detail="Educator with this ID already exists"
+        )
+
+    educator_data = educator.dict()
+    educators_collection.insert_one(educator_data)
+    return {
+        "message": "Educator added successfully",
+        "id": educator.id,
+    }
+
 
 @app.get("/educator-dashboard")
 async def educator_dashboard(current_user: dict = Depends(get_current_user)):
@@ -354,6 +751,7 @@ async def educator_dashboard(current_user: dict = Depends(get_current_user)):
         "program": educator.get("program", []),
     }
 
+
 # --------------------- Enrollment Form Submission ---------------------
 # @app.post("/enrollment-form", response_model=dict)
 # async def submit_enrollment_form(enrollment: EnrollmentForm):
@@ -372,173 +770,33 @@ async def educator_dashboard(current_user: dict = Depends(get_current_user)):
 #     result = students_collection.insert_one(student.dict())
 #     return {"id": str(result.inserted_id)}
 
-# @app.get("/admin/students/", response_model=List[dict])
-# async def view_all_students(admin: dict = Depends(get_admin_user)):
-#     return [serialize(s) for s in students_collection.find()]
 
-# @app.get("/admin/students/{student_id}", response_model=dict)
-# async def view_student_details(student_id: str, admin: dict = Depends(get_admin_user)):
-#     student = students_collection.find_one({"_id": ObjectId(student_id)})
-#     if not student:
-#         raise HTTPException(status_code=404, detail="Student not found")
-#     return serialize(student)
+@app.get("/all-students")
+async def view_student():
+    students = students_collection.find()
+    student_list = []
 
-# @app.put("/admin/students/{student_id}", response_model=dict)
-# async def update_student(student_id: str, student: Student, admin: dict = Depends(get_admin_user)):
-#     result = students_collection.update_one({"_id": ObjectId(student_id)}, {"$set": student.dict()})
-#     if result.matched_count == 0:
-#         raise HTTPException(status_code=404, detail="Student not found")
-#     return {"message": "Student updated successfully"}
+    for student in students:
+        student["_id"] = str(student["_id"])  # Convert ObjectId to string
+        student_list.append(student)
 
-# @app.delete("/admin/students/{student_id}", response_model=dict)
-# async def delete_student(student_id: str, admin: dict = Depends(get_admin_user)):
-#     result = students_collection.delete_one({"_id": ObjectId(student_id)})
-#     if result.deleted_count == 0:
-#         raise HTTPException(status_code=404, detail="Student not found")
-#     return {"message": "Student deleted successfully"}
+    if not student_list:
+        raise HTTPException(status_code=404, detail="No Students Found")
 
-# # --------------------- Admin: Programs ---------------------
-# @app.post("/admin/programs/", response_model=dict)
-# async def add_program(program: Program, admin: dict = Depends(get_admin_user)):
-#     result = programs_collection.insert_one(program.dict())
-#     return {"id": str(result.inserted_id)}
+    return student_list
 
-# @app.get("/admin/programs/", response_model=List[dict])
-# async def view_all_programs(admin: dict = Depends(get_admin_user)):
-#     return [serialize(p) for p in programs_collection.find()]
 
-# @app.put("/admin/programs/{program_id}", response_model=dict)
-# async def update_program(program_id: str, program: Program, admin: dict = Depends(get_admin_user)):
-#     result = programs_collection.update_one({"_id": ObjectId(program_id)}, {"$set": program.dict()})
-#     if result.matched_count == 0:
-#         raise HTTPException(status_code=404, detail="Program not found")
-#     return {"message": "Program updated successfully"}
+@app.get("/all-educators")
+async def view_educator():
+    educator = educators_collection.find()
+    educator_list = []
 
-# @app.delete("/admin/programs/{program_id}", response_model=dict)
-# async def delete_program(program_id: str, admin: dict = Depends(get_admin_user)):
-#     result = programs_collection.delete_one({"_id": ObjectId(program_id)})
-#     if result.deleted_count == 0:
-#         raise HTTPException(status_code=404, detail="Program not found")
-#     return {"message": "Program deleted successfully"}
+    for student in educator:
+        if student.get("role") == "Educator":  # Check if the role is 'educator'
+            student["_id"] = str(student["_id"])  # Convert ObjectId to string
+            educator_list.append(student)
 
-# # --------------------- Admin: Employees ---------------------
-# @app.post("/admin/employees/", response_model=dict)
-# async def add_employee(educator: Educator, admin: dict = Depends(get_admin_user)):
-#     result = educators_collection.insert_one(educator.dict())
-#     return {"id": str(result.inserted_id)}
+    if not educator_list:
+        raise HTTPException(status_code=404, detail="No Students Found")
 
-# @app.get("/admin/employees/", response_model=List[dict])
-# async def view_all_employees(admin: dict = Depends(get_admin_user)):
-#     return [serialize(e) for e in educators_collection.find()]
-
-# @app.get("/admin/employees/{employee_id}", response_model=dict)
-# async def view_employee_details(employee_id: str, admin: dict = Depends(get_admin_user)):
-#     educator = educators_collection.find_one({"_id": ObjectId(employee_id)})
-#     if not educator:
-#         raise HTTPException(status_code=404, detail="Employee not found")
-#     return serialize(educator)
-
-# @app.put("/admin/employees/{employee_id}", response_model=dict)
-# async def update_employee(employee_id: str, educator: Educator, admin: dict = Depends(get_admin_user)):
-#     result = educators_collection.update_one({"_id": ObjectId(employee_id)}, {"$set": educator.dict()})
-#     if result.matched_count == 0:
-#         raise HTTPException(status_code=404, detail="Employee not found")
-#     return {"message": "Employee updated successfully"}
-
-# @app.delete("/admin/employees/{employee_id}", response_model=dict)
-# async def delete_employee(employee_id: str, admin: dict = Depends(get_admin_user)):
-#     result = educators_collection.delete_one({"_id": ObjectId(employee_id)})
-#     if result.deleted_count == 0:
-#         raise HTTPException(status_code=404, detail="Employee not found")
-#     return {"message": "Employee deleted successfully"}
-
-# # --------------------- Admin: Sessions ---------------------
-# @app.post("/admin/sessions/", response_model=dict)
-# async def add_session(session: SessionCreate, admin: dict = Depends(get_admin_user)):
-#     result = sessions_collection.insert_one(session.dict())
-#     return {"id": str(result.inserted_id)}
-
-# @app.get("/admin/sessions/", response_model=List[dict])
-# async def view_all_sessions(admin: dict = Depends(get_admin_user)):
-#     return [serialize(s) for s in sessions_collection.find()]
-
-# @app.put("/admin/sessions/{session_id}", response_model=dict)
-# async def update_session(session_id: str, session: SessionCreate, admin: dict = Depends(get_admin_user)):
-#     result = sessions_collection.update_one({"_id": ObjectId(session_id)}, {"$set": session.dict()})
-#     if result.matched_count == 0:
-#         raise HTTPException(status_code=404, detail="Session not found")
-#     return {"message": "Session updated successfully"}
-
-# @app.delete("/admin/sessions/{session_id}", response_model=dict)
-# async def delete_session(session_id: str, admin: dict = Depends(get_admin_user)):
-#     result = sessions_collection.delete_one({"_id": ObjectId(session_id)})
-#     if result.deleted_count == 0:
-#         raise HTTPException(status_code=404, detail="Session not found")
-#     return {"message": "Session deleted successfully"}
-
-# # --------------------- Admin: Stakeholder Directory ---------------------
-# @app.get("/admin/stakeholder-directory")
-# async def view_stakeholder_directory(admin: dict = Depends(get_admin_user)):
-#     students = [serialize(s) for s in students_collection.find()]
-#     educators = [serialize(e) for e in educators_collection.find()]
-#     programs = [serialize(p) for p in programs_collection.find()]
-#     return {
-#         "students": students,
-#         "educators": educators,
-#         "programs": programs,
-#         "total_students": len(students),
-#         "total_educators": len(educators),
-#         "total_programs": len(programs),
-#     }
-
-# # --------------------- Admin: Enrollment Form Processing ---------------------
-# @app.get("/admin/enrollment-forms", response_model=List[EnrollmentForm])
-# async def view_enrollment_forms(status: Optional[str] = None, admin: dict = Depends(get_admin_user)):
-#     query = {}
-#     if status:
-#         if status not in ["pending", "approved", "rejected"]:
-#             raise HTTPException(status_code=400, detail="Invalid status")
-#         query["status"] = status
-#     forms = [serialize(f) for f in enrollments_collection.find(query)]
-#     return forms
-
-# @app.put("/admin/enrollment-forms/{form_id}", response_model=dict)
-# async def process_enrollment_form(
-#     form_id: str,
-#     status: Literal["approved", "rejected"],
-#     admin: dict = Depends(get_admin_user),
-# ):
-#     form = enrollments_collection.find_one({"_id": ObjectId(form_id)})
-#     if not form:
-#         raise HTTPException(status_code=404, detail="Enrollment form not found")
-
-#     enrollments_collection.update_one(
-#         {"_id": ObjectId(form_id)}, {"$set": {"status": status}}
-#     )
-
-#     if status == "approved":
-#         student_data = {
-#             "name": form["student_name"],
-#             "date_of_birth": form["date_of_birth"],
-#             "gender": form["gender"],
-#             "ud_id": form.get("ud_id", ""),
-#             "primary_diagnosis": form["primary_diagnosis"],
-#             "comorbidity": form.get("comorbidity"),
-#             "email": form["email"],
-#             "fathers_name": form["fathers_name"],
-#             "mothers_name": form["mothers_name"],
-#             "blood_group": form.get("blood_group", BloodGroup.O_POSITIVE),
-#             "program": form.get("preferred_program", "General"),
-#             "enrollment_year": datetime.utcnow().year,
-#             "status": Status.ACTIVE,
-#             "student_id": f"STU{datetime.utcnow().strftime('%Y%m%d%H%M%S')}",
-#             "performance": Performance().dict(),
-#         }
-
-#         students_collection.insert_one(student_data)
-#         return {
-#             "message": "Enrollment form approved and student record created",
-#             "student_id": student_data["student_id"],
-#         }
-
-#     return {"message": f"Enrollment form {status}", "form_id": form_id}
+    return educator_list

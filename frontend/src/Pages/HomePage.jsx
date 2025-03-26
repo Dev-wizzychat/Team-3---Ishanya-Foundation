@@ -5,13 +5,14 @@ import { Swiper, SwiperSlide } from "swiper/react";
 import "swiper/css";
 import "swiper/css/pagination";
 import { Pagination, Autoplay } from "swiper/modules";
-import image1 from "../assets/1.webp";
-import image3 from "../assets/3.jpg";
-import image4 from "../assets/4.jpg";
+import bg from "../assets/20.jpg";
 import image5 from "../assets/Swathi.jpg";
 import image6 from "../assets/Raghu.jpg";
 import image7 from "../assets/Reddy.jpg";
 import SocialSidebar from "./SocialSidebar";
+import comm from "../assets/comm.jpg";
+import FAQs from "./FAQs";
+import Footer from "./Footer";
 // Typewriter Animation Component
 class TypewriterAnimation extends Component {
   constructor(props) {
@@ -30,7 +31,7 @@ class TypewriterAnimation extends Component {
       "hi",
       "Advocating policy changes for inclusion.",
       "hi",
-      "Transforming beneficiaries into contributors.",
+      "Focus on Diversity, Equity & Inclusion for PWDs.",
       "hi",
     ]; // Array of messages
     this.speed = 50; // Typing speed in milliseconds
@@ -110,23 +111,62 @@ export default function LandingPage() {
   return (
     <div className="min-h-screen flex flex-col">
       <SocialSidebar />
-      <nav className="fixed top-0 left-0 right-0 bg-white shadow-md z-10 h-16 flex items-center">
-        <div className="max-w-6xl mx-auto px-4 py-2 flex justify-between items-center w-full">
-          <div className="flex items-center justify-between w-full h-full">
-            <div className="flex items-center space-x-2">
-              <BookOpen className="h-7 w-7 text-blue-600" />
-              <span className="text-xl font-semibold text-gray-800">Ishanya</span>
-            </div>
-            <div className="flex items-center">
-              <a href="/login" className="px-4 py-2 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 transition duration-300">
-                Login
-              </a>
-            </div>
+      <nav className="fixed top-0 left-0 right-0 bg-[#001f3f] shadow-md z-10 h-20 flex items-center">
+        <div className="max-w-1xl mx-auto px-6 py-2 flex justify-between items-center w-full">
+          {/* Left section with logo */}
+          <div className="flex items-center space-x-2">
+            <span
+              className="text-3xl font-bold text-gray-800 shadow-lg"
+              style={{
+                fontFamily: "Arial",
+                color: "white",
+                textShadow: "2px 2px 5px rgba(219, 219, 219, 0.5)",
+              }}
+            >
+              ISHANYA INDIA FOUNDATION
+            </span>
+          </div>
+
+          {/* Right section with About, Contact, and Employee button */}
+          <div className="flex space-x-8 text-white font-semibold py-8 ml-auto mt-5">
+            <a href="#" className="hover:text-yellow-400">
+              HOME
+            </a>
+            <a
+              onClick={() =>
+                document
+                  .getElementById("about-programs")
+                  .scrollIntoView({ behavior: "smooth" })
+              }
+              className="hover:text-yellow-400"
+            >
+              ABOUT
+            </a>
+            <a
+              onClick={() =>
+                document
+                  .getElementById("foot")
+                  .scrollIntoView({ behavior: "smooth" })
+              }
+              className="hover:text-yellow-400"
+            >
+              CONTACT
+            </a>
+            <a
+              href="/login"
+              className="px-4 py-2 text-sm bg-red-700 text-white rounded-md hover:bg-gray-800 transition duration-300 flex items-center"
+              style={{ height: "auto" }} // Adjust the button height
+            >
+              <b>For Employees</b>
+            </a>
           </div>
         </div>
       </nav>
-      <section className="py-10 flex justify-center items-center py-10">
-        <div className="w-full max-w-8xl bg-white shadow-lg border border-gray-200 rounded-lg overflow-hidden">
+      <section className="py-10 flex justify-center items-center bg-white">
+        <div
+          className="w-full max-w-8xl shadow-lg border border-gray-300 rounded-lg overflow-hidden"
+          style={{ backgroundImage: `url(${bg})` }}
+        >
           <Swiper
             spaceBetween={0}
             slidesPerView={1}
@@ -174,34 +214,13 @@ export default function LandingPage() {
                     navigation // Add navigation buttons (previous/next)
                     pagination={{ clickable: true }} // Add pagination dots
                     loop // Make the slider loop infinitely
-                    autoplay={{
-                      delay: 2000, // Change slides every 1 second
-                      disableOnInteraction: false, // Keep autoplay going even after user interaction
-                    }}
-                    modules={[Autoplay]}
                   >
                     {/* Slide 1 */}
                     <SwiperSlide>
                       <img
-                        src={image1}
+                        src="https://ishanyaindia.org/wp-content/uploads/2020/02/Ishanya_logo.png"
                         alt="Image 1"
-                        className="w-[400px] h-[400px] object-cover rounded-md"
-                      />
-                    </SwiperSlide>
-                    <SwiperSlide>
-                      <img
-                        src={image3}
-                        alt="Image 3"
-                        className="w-[500px] h-[350px] object-cover rounded-md mt-10"
-                      />
-                    </SwiperSlide>
-
-                    {/* Slide 4 */}
-                    <SwiperSlide>
-                      <img
-                        src={image4}
-                        alt="Image 4"
-                        className="w-[300px] h-[400px] object-cover rounded-md"
+                        className="w-[400px] h-[350px] object-cover rounded-md"
                       />
                     </SwiperSlide>
                   </Swiper>
@@ -212,7 +231,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      <section className="py-16 md:py-32 px-4 bg-white">
+      <section id="about-programs" className="py-16 md:py-32 px-4 bg-white">
         <div className="max-w-6xl mx-auto p-8 bg-gray-50 shadow-lg rounded-lg border border-gray-200">
           <div className="grid md:grid-cols-[58%_42%] gap-8 items-center">
             <div className="text-left">
@@ -325,9 +344,15 @@ export default function LandingPage() {
       </section>
 
       {/* Stats Section - Now with improved responsiveness */}
-      <section className="py-16 md:py-20 px-4 bg-gray-50">
+      <section
+        className="py-16 md:py-20 px-4 bg-gray-50"
+        style={{ backgroundImage: `url(${comm})` }}
+      >
         <div className="max-w-6xl mx-auto">
-          <h2 className="text-3xl md:text-4xl font-bold text-center mb-10 md:mb-16">
+          <h2
+            className="text-3xl md:text-4xl font-bold text-center mb-10 md:mb-16"
+            style={{ fontFamily: "Times New Roman, serif" }}
+          >
             Our Growing Community
           </h2>
 
@@ -382,24 +407,11 @@ export default function LandingPage() {
               </p>
             </div>
           </div>
-
-          <div className="text-center mt-10 md:mt-16">
-            <p className="text-lg md:text-xl text-gray-700 max-w-3xl mx-auto">
-              Join our thriving community of learners and educators to
-              experience personalized education that transforms lives.
-            </p>
-            <a
-              href="/join-community"
-              className="mt-4 md:mt-6 inline-block px-6 py-3 bg-blue-600 text-white font-semibold rounded-md hover:bg-blue-700 transition duration-300"
-            >
-              Become Part of Our Community
-            </a>
-          </div>
         </div>
       </section>
 
       <section id="explore-programs" className="py-16 md:py-20 px-4">
-        <div className="max-w-6xl mx-auto">
+        <div className="max-w-4xl mx-auto">
           <h2 className="text-3xl md:text-4xl font-bold text-center mb-10 md:mb-16">
             Explore Programs
           </h2>
@@ -407,58 +419,63 @@ export default function LandingPage() {
           {/* Programs Grid */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
             {/* Program 1 */}
-            <div className="bg-pink-100 shadow-lg rounded-lg overflow-hidden text-center p-4 hover:scale-105 transition">
-              <img
-                src="/assets/program1.jpg"
-                alt="Program 1"
-                className="w-full h-40 object-cover rounded-md"
-              />
-              <h3 className="text-xl font-semibold mt-4">
-                Science & Technology
+            <div className="bg-[#001f3f] shadow-lg rounded-lg overflow-hidden text-center p-4 hover:scale-105 transition">
+              <h3
+                className="text-xl font-semibold mt-4"
+                style={{ fontFamily: "Roboto", color: "white" }}
+              >
+                SAMETI
               </h3>
-              <p className="text-gray-600 text-sm mt-2">
-                Explore cutting-edge advancements in science.
+              <p className="text-white text-sm mt-2">
+                A Pre-Academic Skills Program. It has been designed to cater to
+                learning in a group setting, in order to improve and enhance the
+                process of socialization in children with varied special needs
               </p>
             </div>
 
             {/* Program 2 */}
-            <div className="bg-pink-100 shadow-lg rounded-lg overflow-hidden text-center p-4 hover:scale-105 transition">
-              <img
-                src="/assets/program2.jpg"
-                alt="Program 2"
-                className="w-full h-40 object-cover rounded-md"
-              />
-              <h3 className="text-xl font-semibold mt-4">
-                Business & Management
+            <div className="bg-[#001f3f] shadow-lg rounded-lg overflow-hidden text-center p-4 hover:scale-105 transition">
+              <h3
+                className="text-xl font-semibold mt-4"
+                style={{ fontFamily: "Roboto", color: "white" }}
+              >
+                SATTVA
               </h3>
-              <p className="text-gray-600 text-sm mt-2">
-                Learn essential business skills and leadership.
+              <p className="text-white text-sm mt-2">
+                A program that looks beyond the conventional idea of academics.
+                It is a bridge between academics & functional skills with more
+                focus on developing soft skills for transition to adulthood
               </p>
             </div>
 
             {/* Program 3 */}
-            <div className="bg-pink-100 shadow-lg rounded-lg overflow-hidden text-center p-4 hover:scale-105 transition">
-              <img
-                src="/assets/program3.jpg"
-                alt="Program 3"
-                className="w-full h-40 object-cover rounded-md"
-              />
-              <h3 className="text-xl font-semibold mt-4">Arts & Humanities</h3>
-              <p className="text-gray-600 text-sm mt-2">
-                Discover creativity through arts and literature.
+            <div className="bg-[#001f3f] shadow-lg rounded-lg overflow-hidden text-center p-4 hover:scale-105 transition">
+              <h3
+                className="text-xl font-semibold mt-4"
+                style={{ fontFamily: "Roboto", color: "white" }}
+              >
+                SIDDHI
+              </h3>
+              <p className="text-white text-sm mt-2">
+                1-2-1 Remedial program. Guided sessions with individual goals &
+                IEP’s. We use an eclectic approach and curriculum tailored to
+                the specific needs and abilities of each individual
               </p>
             </div>
 
             {/* Program 4 */}
-            <div className="bg-pink-100 shadow-lg rounded-lg overflow-hidden text-center p-4 hover:scale-105 transition">
-              <img
-                src="/assets/program4.jpg"
-                alt="Program 4"
-                className="w-full h-40 object-cover rounded-md"
-              />
-              <h3 className="text-xl font-semibold mt-4">Health & Wellness</h3>
-              <p className="text-gray-600 text-sm mt-2">
-                Improve well-being with fitness and health courses.
+            <div className="bg-[#001f3f] shadow-lg rounded-lg overflow-hidden text-center p-4 hover:scale-105 transition">
+              <h3
+                className="text-xl font-semibold mt-4"
+                style={{ fontFamily: "Roboto", color: "white" }}
+              >
+                VOCATIONAL
+              </h3>
+              <p className="text-white text-sm mt-2">
+                This program was created to train individuals on specific
+                skills, with employment being the end goal. Currently, we offer
+                training for a host of job roles considering ongoing market
+                trend & requirements
               </p>
             </div>
           </div>
@@ -473,71 +490,9 @@ export default function LandingPage() {
           </div>
         </div>
       </section>
+      <FAQs />
 
-      <footer className="bg-gray-800 text-white py-8 mt-auto">
-        <div className="max-w-6xl mx-auto px-4">
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 md:gap-8">
-            <div>
-              <h3 className="text-lg font-semibold mb-4">Ishanya</h3>
-              <p className="text-gray-400">
-                Empowering futures through quality education since 2020.
-              </p>
-            </div>
-            <div className="mt-6 sm:mt-0">
-              <h3 className="text-lg font-semibold mb-4">Contact Us</h3>
-              <address className="not-italic text-gray-400">
-                123 Education Street
-                <br />
-                Learning City, LC 12345
-                <br />
-                info@gmail.com.com
-                <br />
-                (555) 123-4567
-              </address>
-            </div>
-            <div className="mt-6 md:mt-0">
-              <h3 className="text-lg font-semibold mb-4">Quick Links</h3>
-              <ul className="space-y-2 text-gray-400">
-                <li>
-                  <a
-                    href="#"
-                    className="hover:text-white transition duration-300"
-                  >
-                    Courses
-                  </a>
-                </li>
-                <li>
-                  <a
-                    href="#"
-                    className="hover:text-white transition duration-300"
-                  >
-                    Faculty
-                  </a>
-                </li>
-                <li>
-                  <a
-                    href="#"
-                    className="hover:text-white transition duration-300"
-                  >
-                    Testimonials
-                  </a>
-                </li>
-                <li>
-                  <a
-                    href="#"
-                    className="hover:text-white transition duration-300"
-                  >
-                    Privacy Policy
-                  </a>
-                </li>
-              </ul>
-            </div>
-          </div>
-          <div className="border-t border-gray-700 mt-8 pt-6 text-center text-gray-400">
-            &copy; {new Date().getFullYear()} Ishanya. All rights reserved.
-          </div>
-        </div>
-      </footer>
+      <Footer />
     </div>
   );
 }
